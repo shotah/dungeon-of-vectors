@@ -23,11 +23,11 @@ function SaveLoadPanel({ onClose }: { onClose: () => void }) {
       <div
         style={{
           background: '#1a1a2e', border: '2px solid #3a3a5a', borderRadius: 8,
-          padding: 20, minWidth: 300, color: '#ddd', fontFamily: 'monospace',
+          padding: 20, minWidth: 320, color: '#ddd', fontFamily: 'monospace',
         }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ fontSize: 16, color: '#aaccff', marginBottom: 16 }}>Save / Load</div>
+        <div style={{ fontSize: 16, color: '#aaccff', marginBottom: 16 }}>Load / Manage Saves</div>
         {slots.map(slot => (
           <div key={slot.id} style={{
             display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
@@ -53,7 +53,7 @@ function SaveLoadPanel({ onClose }: { onClose: () => void }) {
           </div>
         ))}
         <div style={{ textAlign: 'center', marginTop: 12 }}>
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+          <Button variant="secondary" onClick={onClose}>Close (Esc)</Button>
         </div>
       </div>
     </div>
@@ -72,25 +72,40 @@ export default function GameScreen() {
   const position = useGameStore(s => s.position);
   const setScreen = useGameStore(s => s.setScreen);
 
+  const saveGame = useGameStore(s => s.saveGame);
+
   const [showInventory, setShowInventory] = useState(false);
   const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [showStartOver, setShowStartOver] = useState(false);
+
+  const handleQuickSave = useCallback(() => {
+    saveGame(1);
+  }, [saveGame]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (combat.active || showInventory || showSaveLoad) return;
-
-    switch (e.key.toLowerCase()) {
-      case 'w': case 'arrowup': moveForward(); break;
-      case 's': case 'arrowdown': moveBackward(); break;
-      case 'a': case 'arrowleft': turnPlayerLeft(); break;
-      case 'd': case 'arrowright': turnPlayerRight(); break;
-      case ' ': e.preventDefault(); goDownstairs(); break;
-      case 'i': setShowInventory(true); break;
-      case 'escape':
-        setShowInventory(false);
-        setShowSaveLoad(false);
-        break;
+    if (e.key === 'Escape') {
+      setShowInventory(false);
+      setShowSaveLoad(false);
+      setShowStartOver(false);
+      return;
     }
-  }, [combat.active, showInventory, showSaveLoad, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, goDownstairs]);
+
+    if (combat.active || showInventory || showSaveLoad || showStartOver) return;
+
+    switch (e.key) {
+      case 'F5': e.preventDefault(); handleQuickSave(); break;
+      case 'F9': e.preventDefault(); setShowSaveLoad(true); break;
+      default:
+        switch (e.key.toLowerCase()) {
+          case 'w': case 'arrowup': moveForward(); break;
+          case 's': case 'arrowdown': moveBackward(); break;
+          case 'a': case 'arrowleft': turnPlayerLeft(); break;
+          case 'd': case 'arrowright': turnPlayerRight(); break;
+          case ' ': e.preventDefault(); goDownstairs(); break;
+          case 'i': setShowInventory(true); break;
+        }
+    }
+  }, [combat.active, showInventory, showSaveLoad, showStartOver, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, goDownstairs, handleQuickSave]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -116,11 +131,14 @@ export default function GameScreen() {
             <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}>
               Inventory (I)
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}>
-              Save/Load
+            <Button size="sm" onClick={handleQuickSave}>
+              Save (F5)
             </Button>
-            <Button size="sm" variant="danger" onClick={() => setScreen('main_menu')}>
-              Quit
+            <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}>
+              Load (F9)
+            </Button>
+            <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}>
+              Start Over
             </Button>
           </div>
         </div>
@@ -160,6 +178,35 @@ export default function GameScreen() {
         {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
       </Suspense>
       {showSaveLoad && <SaveLoadPanel onClose={() => setShowSaveLoad(false)} />}
+
+      {showStartOver && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60,
+        }} onClick={() => setShowStartOver(false)}>
+          <div
+            style={{
+              background: '#1a1a2e', border: '2px solid #3a3a5a', borderRadius: 8,
+              padding: 24, minWidth: 280, color: '#ddd', fontFamily: 'monospace',
+              textAlign: 'center',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 16, color: '#ff8888', marginBottom: 12 }}>Start Over?</div>
+            <div style={{ fontSize: 12, color: '#999', marginBottom: 20 }}>
+              Unsaved progress will be lost. Make sure to save first!
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <Button variant="danger" onClick={() => { setShowStartOver(false); setScreen('main_menu'); }}>
+                Yes, Start Over
+              </Button>
+              <Button variant="secondary" onClick={() => setShowStartOver(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

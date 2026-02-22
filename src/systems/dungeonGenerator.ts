@@ -22,6 +22,10 @@ function isInBounds(x: number, y: number, width: number, height: number): boolea
   return x >= 0 && x < width && y >= 0 && y < height;
 }
 
+function isInterior(x: number, y: number, width: number, height: number): boolean {
+  return x >= 1 && x < width - 1 && y >= 1 && y < height - 1;
+}
+
 function carveCell(grid: DungeonCell[][], x: number, y: number, type: CellType = 'floor') {
   grid[y][x] = { type, explored: false, hasEncounter: false };
 }
@@ -45,25 +49,27 @@ function roomsOverlap(a: Room, b: Room, padding = 1): boolean {
 
 function carveCorridor(grid: DungeonCell[][], from: Position, to: Position, rng: SeededRandom) {
   let { x, y } = from;
+  const w = grid[0].length;
+  const h = grid.length;
   const goHorizontalFirst = rng.nextBool();
 
   if (goHorizontalFirst) {
     while (x !== to.x) {
       x += x < to.x ? 1 : -1;
-      if (isInBounds(x, y, grid[0].length, grid.length)) carveCell(grid, x, y);
+      if (isInterior(x, y, w, h)) carveCell(grid, x, y);
     }
     while (y !== to.y) {
       y += y < to.y ? 1 : -1;
-      if (isInBounds(x, y, grid[0].length, grid.length)) carveCell(grid, x, y);
+      if (isInterior(x, y, w, h)) carveCell(grid, x, y);
     }
   } else {
     while (y !== to.y) {
       y += y < to.y ? 1 : -1;
-      if (isInBounds(x, y, grid[0].length, grid.length)) carveCell(grid, x, y);
+      if (isInterior(x, y, w, h)) carveCell(grid, x, y);
     }
     while (x !== to.x) {
       x += x < to.x ? 1 : -1;
-      if (isInBounds(x, y, grid[0].length, grid.length)) carveCell(grid, x, y);
+      if (isInterior(x, y, w, h)) carveCell(grid, x, y);
     }
   }
 }
@@ -97,7 +103,7 @@ function addMazePaths(grid: DungeonCell[][], rng: SeededRandom) {
         for (const d of dirs) {
           const nx = current.x + d.x;
           const ny = current.y + d.y;
-          if (isInBounds(nx, ny, width, height) && grid[ny][nx].type === 'wall') {
+          if (isInterior(nx, ny, width, height) && grid[ny][nx].type === 'wall') {
             neighbors.push({ x: nx, y: ny });
           }
         }
@@ -143,8 +149,8 @@ export function generateDungeon(seed: number, floor: number): DungeonFloor {
   for (let attempt = 0; attempt < numRooms * 10 && rooms.length < numRooms; attempt++) {
     const w = rng.nextInt(3, 7);
     const h = rng.nextInt(3, 7);
-    const x = rng.nextInt(1, width - w - 1);
-    const y = rng.nextInt(1, height - h - 1);
+    const x = rng.nextInt(2, width - w - 2);
+    const y = rng.nextInt(2, height - h - 2);
     const room: Room = { x, y, w, h };
 
     if (!rooms.some(r => roomsOverlap(r, room))) {
@@ -214,6 +220,16 @@ export function generateDungeon(seed: number, floor: number): DungeonFloor {
 
   // Place random encounters
   placeEncounters(grid, rng, 0.08 + floor * 0.02);
+
+  // Enforce solid wall border around the entire map edge
+  for (let x = 0; x < width; x++) {
+    grid[0][x] = { type: 'wall', explored: false, hasEncounter: false };
+    grid[height - 1][x] = { type: 'wall', explored: false, hasEncounter: false };
+  }
+  for (let y = 0; y < height; y++) {
+    grid[y][0] = { type: 'wall', explored: false, hasEncounter: false };
+    grid[y][width - 1] = { type: 'wall', explored: false, hasEncounter: false };
+  }
 
   return { width, height, grid, floor, seed };
 }
