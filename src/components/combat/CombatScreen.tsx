@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { MonsterSprite } from '../svg/monsters';
 import Button from '../ui/Button';
@@ -9,9 +9,9 @@ export default function CombatScreen() {
   const combat = useGameStore(s => s.combat);
   const party = useGameStore(s => s.party);
   const inventory = useGameStore(s => s.inventory);
-  const selectAction = useGameStore(s => s.selectAction);
-  const selectSpell = useGameStore(s => s.selectSpell);
-  const selectCombatItem = useGameStore(s => s.selectCombatItem);
+  const storeSelectAction = useGameStore(s => s.selectAction);
+  const storeSelectSpell = useGameStore(s => s.selectSpell);
+  const storeSelectCombatItem = useGameStore(s => s.selectCombatItem);
   const executePlayerAction = useGameStore(s => s.executePlayerAction);
   const endCombat = useGameStore(s => s.endCombat);
   const logRef = useRef<HTMLDivElement>(null);
@@ -21,20 +21,32 @@ export default function CombatScreen() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [combat.log]);
 
-  useEffect(() => {
-    setSelectedTarget(0);
-  }, [combat.targetingMode, combat.selectedAction]);
-
-  if (!combat.active && !combat.victory && !combat.defeat) return null;
-
   const currentEntity = combat.turnOrder[combat.currentTurn];
   const isPlayerTurn = currentEntity && !currentEntity.isMonster;
   const currentChar = isPlayerTurn ? party.find(c => c.id === currentEntity.id) : null;
 
-  const consumables = inventory.filter(i => i.type === 'consumable');
-  const aliveMonsters = combat.monsters.map((m, i) => ({ m, i })).filter(e => e.m.hp > 0);
-  const aliveParty = party.map((c, i) => ({ c, i })).filter(e => e.c.alive);
-  const spells = currentChar ? getSpellsForClass(currentChar.characterClass, currentChar.stats.level) : [];
+  const consumables = useMemo(() => inventory.filter(i => i.type === 'consumable'), [inventory]);
+  const aliveMonsters = useMemo(() => combat.monsters.map((m, i) => ({ m, i })).filter(e => e.m.hp > 0), [combat.monsters]);
+  const aliveParty = useMemo(() => party.map((c, i) => ({ c, i })).filter(e => e.c.alive), [party]);
+  const spells = useMemo(
+    () => currentChar ? getSpellsForClass(currentChar.characterClass, currentChar.stats.level) : [],
+    [currentChar],
+  );
+
+  const handleSelectAction = useCallback((action: Parameters<typeof storeSelectAction>[0]) => {
+    setSelectedTarget(0);
+    storeSelectAction(action);
+  }, [storeSelectAction]);
+
+  const handleSelectSpell = useCallback((spell: Parameters<typeof storeSelectSpell>[0]) => {
+    setSelectedTarget(0);
+    storeSelectSpell(spell);
+  }, [storeSelectSpell]);
+
+  const handleSelectCombatItem = useCallback((item: Parameters<typeof storeSelectCombatItem>[0]) => {
+    setSelectedTarget(0);
+    storeSelectCombatItem(item);
+  }, [storeSelectCombatItem]);
 
   const handleCombatKey = useCallback((e: KeyboardEvent) => {
     const key = e.key;
@@ -56,8 +68,7 @@ export default function CombatScreen() {
         e.preventDefault();
         executePlayerAction(targets[selectedTarget].i);
       } else if (key === 'Escape' || key === 's' || key === 'ArrowDown') {
-        selectAction('attack');
-        setSelectedTarget(0);
+        handleSelectAction('attack');
       } else if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < targets.length) executePlayerAction(targets[idx].i);
@@ -76,8 +87,7 @@ export default function CombatScreen() {
         e.preventDefault();
         executePlayerAction(targets[selectedTarget].i);
       } else if (key === 'Escape' || key === 's' || key === 'ArrowDown') {
-        selectAction('attack');
-        setSelectedTarget(0);
+        handleSelectAction('attack');
       } else if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < targets.length) executePlayerAction(targets[idx].i);
@@ -86,42 +96,44 @@ export default function CombatScreen() {
     }
 
     if (combat.selectedAction === 'magic' && !combat.selectedSpell) {
-      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { selectAction('attack'); return; }
+      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleSelectAction('attack'); return; }
       if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < spells.length && currentChar.stats.mp >= spells[idx].manaCost) {
-          selectSpell(spells[idx]);
+          handleSelectSpell(spells[idx]);
         }
       }
       return;
     }
 
     if (combat.selectedAction === 'item' && !combat.selectedItem) {
-      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { selectAction('attack'); return; }
+      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleSelectAction('attack'); return; }
       if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
-        if (idx < consumables.length) selectCombatItem(consumables[idx]);
+        if (idx < consumables.length) handleSelectCombatItem(consumables[idx]);
       }
       return;
     }
 
     if (!combat.selectedAction) {
       switch (key) {
-        case '1': case 'w': case 'ArrowUp': selectAction('attack'); break;
-        case '2': selectAction('defend'); break;
-        case '3': if (currentChar.stats.maxMp > 0) selectAction('magic'); break;
-        case '4': if (consumables.length > 0) selectAction('item'); break;
-        case '5': selectAction('flee'); break;
+        case '1': case 'w': case 'ArrowUp': handleSelectAction('attack'); break;
+        case '2': handleSelectAction('defend'); break;
+        case '3': if (currentChar.stats.maxMp > 0) handleSelectAction('magic'); break;
+        case '4': if (consumables.length > 0) handleSelectAction('item'); break;
+        case '5': handleSelectAction('flee'); break;
       }
     }
   }, [combat, isPlayerTurn, currentChar, aliveMonsters, aliveParty, selectedTarget,
-      spells, consumables, endCombat, executePlayerAction, selectAction, selectSpell,
-      selectCombatItem]);
+      spells, consumables, endCombat, executePlayerAction, handleSelectAction, handleSelectSpell,
+      handleSelectCombatItem]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleCombatKey);
     return () => window.removeEventListener('keydown', handleCombatKey);
   }, [handleCombatKey]);
+
+  if (!combat.active && !combat.victory && !combat.defeat) return null;
 
   return (
     <div style={{
@@ -269,15 +281,15 @@ export default function CombatScreen() {
               </div>
               {!combat.selectedAction && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Button onClick={() => selectAction('attack')} size="sm">[1] Attack</Button>
-                  <Button onClick={() => selectAction('defend')} size="sm" variant="secondary">[2] Defend</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm">[1] Attack</Button>
+                  <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">[2] Defend</Button>
                   {currentChar.stats.maxMp > 0 && (
-                    <Button onClick={() => selectAction('magic')} size="sm" variant="gold">[3] Magic</Button>
+                    <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">[3] Magic</Button>
                   )}
                   {consumables.length > 0 && (
-                    <Button onClick={() => selectAction('item')} size="sm" variant="secondary">[4] Item</Button>
+                    <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary">[4] Item</Button>
                   )}
-                  <Button onClick={() => selectAction('flee')} size="sm" variant="danger">[5] Flee</Button>
+                  <Button onClick={() => handleSelectAction('flee')} size="sm" variant="danger">[5] Flee</Button>
                 </div>
               )}
               {combat.selectedAction === 'magic' && !combat.selectedSpell && (
@@ -285,7 +297,7 @@ export default function CombatScreen() {
                   {spells.map((spell, si) => (
                     <Button
                       key={spell.id}
-                      onClick={() => selectSpell(spell)}
+                      onClick={() => handleSelectSpell(spell)}
                       size="sm"
                       variant="gold"
                       disabled={currentChar.stats.mp < spell.manaCost}
@@ -293,17 +305,17 @@ export default function CombatScreen() {
                       [{si + 1}] {spell.name} ({spell.manaCost}MP)
                     </Button>
                   ))}
-                  <Button onClick={() => selectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
                 </div>
               )}
               {combat.selectedAction === 'item' && !combat.selectedItem && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {consumables.map((item, ci) => (
-                    <Button key={`${item.id}-${ci}`} onClick={() => selectCombatItem(item)} size="sm" variant="secondary">
+                    <Button key={`${item.id}-${ci}`} onClick={() => handleSelectCombatItem(item)} size="sm" variant="secondary">
                       [{ci + 1}] {item.name}
                     </Button>
                   ))}
-                  <Button onClick={() => selectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
                 </div>
               )}
               {combat.targetingMode === 'enemy' && (
