@@ -56,7 +56,8 @@ function FloorProgress({ dungeon, explored }: { dungeon: DungeonFloor; explored:
 }
 
 export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
-  const MAP_SIZE = mobile ? 160 : 160;
+  const MAP_SIZE = mobile ? 220 : 160;
+  const cellSize = mobile ? 8 : CELL_SIZE;
   const dungeon = useGameStore(s => s.dungeon);
   const position = useGameStore(s => s.position);
   const facing = useGameStore(s => s.facing);
@@ -68,8 +69,9 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
   const explored = exploredMaps[currentFloor];
   if (!explored) return null;
 
-  const offsetX = Math.max(0, position.x * CELL_SIZE - MAP_SIZE / 2);
-  const offsetY = Math.max(0, position.y * CELL_SIZE - MAP_SIZE / 2);
+  const cs = cellSize;
+  const offsetX = Math.max(0, position.x * cs - MAP_SIZE / 2);
+  const offsetY = Math.max(0, position.y * cs - MAP_SIZE / 2);
 
   const cells: React.ReactElement[] = [];
   for (let y = 0; y < dungeon.height; y++) {
@@ -88,10 +90,10 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
       cells.push(
         <rect
           key={`${x}-${y}`}
-          x={x * CELL_SIZE}
-          y={y * CELL_SIZE}
-          width={CELL_SIZE}
-          height={CELL_SIZE}
+          x={x * cs}
+          y={y * cs}
+          width={cs}
+          height={cs}
           fill={color}
         />
       );
@@ -99,21 +101,22 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
   }
 
   const arrowRotation = facing === 'N' ? 0 : facing === 'E' ? 90 : facing === 'S' ? 180 : 270;
+  const arrowSize = mobile ? 5 : 3;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{
         width: MAP_SIZE, height: MAP_SIZE, overflow: 'hidden',
         border: '2px solid #3a3a5a', borderRadius: 4, background: '#0a0a15',
       }}>
         <svg
-          width={dungeon.width * CELL_SIZE}
-          height={dungeon.height * CELL_SIZE}
+          width={dungeon.width * cs}
+          height={dungeon.height * cs}
           viewBox={`${offsetX} ${offsetY} ${MAP_SIZE} ${MAP_SIZE}`}
         >
           {cells}
-          <g transform={`translate(${position.x * CELL_SIZE + CELL_SIZE / 2}, ${position.y * CELL_SIZE + CELL_SIZE / 2}) rotate(${arrowRotation})`}>
-            <polygon points="0,-3 2,2 -2,2" fill="#ff4444" stroke="#cc2222" strokeWidth="0.5" />
+          <g transform={`translate(${position.x * cs + cs / 2}, ${position.y * cs + cs / 2}) rotate(${arrowRotation})`}>
+            <polygon points={`0,${-arrowSize} ${arrowSize * 0.7},${arrowSize * 0.6} ${-arrowSize * 0.7},${arrowSize * 0.6}`} fill="#ff4444" stroke="#ffcc44" strokeWidth={mobile ? 1 : 0.5} />
           </g>
         </svg>
       </div>

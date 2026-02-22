@@ -266,7 +266,7 @@ export default function GameScreen() {
             </div>
             <div style={{
               background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: '0 0 4px 4px',
-              padding: 4, maxHeight: 220, overflow: 'auto',
+              padding: 4, maxHeight: 280, overflow: 'auto',
             }}>
               {mobileTab === 'map' ? <MiniMap mobile /> : <PartyBar />}
             </div>
