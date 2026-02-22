@@ -151,11 +151,13 @@ export default function GameScreen() {
         </div>
 
         {/* Movement controls for touch/click */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-          <Button size="sm" variant="secondary" onClick={turnPlayerLeft}>← Turn</Button>
-          <Button size="sm" onClick={moveForward}>↑ Forward</Button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Button size="sm" variant="secondary" onClick={turnPlayerLeft}>← Turn</Button>
+            <Button size="sm" onClick={moveForward}>↑ Forward</Button>
+            <Button size="sm" variant="secondary" onClick={turnPlayerRight}>Turn →</Button>
+          </div>
           <Button size="sm" variant="secondary" onClick={moveBackward}>↓ Back</Button>
-          <Button size="sm" variant="secondary" onClick={turnPlayerRight}>Turn →</Button>
         </div>
 
         {/* Message log */}

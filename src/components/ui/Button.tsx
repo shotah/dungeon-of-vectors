@@ -17,9 +17,9 @@ const VARIANTS = {
 };
 
 const SIZES = {
-  sm: { padding: '4px 10px', fontSize: '12px' },
-  md: { padding: '8px 16px', fontSize: '14px' },
-  lg: { padding: '12px 24px', fontSize: '16px' },
+  sm: { padding: '6px 12px', fontSize: '12px', minHeight: '36px' },
+  md: { padding: '10px 18px', fontSize: '14px', minHeight: '40px' },
+  lg: { padding: '14px 28px', fontSize: '16px', minHeight: '48px' },
 };
 
 export default function Button({ children, onClick, variant = 'primary', disabled, size = 'md', style }: ButtonProps) {
@@ -34,12 +34,15 @@ export default function Button({ children, onClick, variant = 'primary', disable
         background: disabled ? '#2a2a2a' : v.bg,
         color: disabled ? '#666' : v.text,
         border: `1px solid ${disabled ? '#333' : v.border}`,
-        borderRadius: 4,
+        borderRadius: 6,
         padding: s.padding,
         fontSize: s.fontSize,
+        minHeight: s.minHeight,
         cursor: disabled ? 'not-allowed' : 'pointer',
         fontFamily: 'monospace',
         transition: 'background 0.15s',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
         ...style,
       }}
       onMouseEnter={e => { if (!disabled) (e.target as HTMLElement).style.background = v.hover; }}

@@ -53,6 +53,31 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
     xpReward: 500, goldReward: 200, minFloor: 5, svgComponent: 'DragonSVG',
     lootTable: [{ itemId: 'dragon_sword', chance: 0.2 }, { itemId: 'dragon_shield', chance: 0.15 }],
   },
+  {
+    id: 'wyvern', name: 'Wyvern', maxHp: 75, attack: 20, defense: 10, speed: 14,
+    xpReward: 120, goldReward: 55, minFloor: 4, svgComponent: 'WyvernSVG',
+    lootTable: [{ itemId: 'wyvern_lance', chance: 0.1 }, { itemId: 'wyvern_armor', chance: 0.08 }, { itemId: 'health_potion', chance: 0.25 }],
+  },
+  {
+    id: 'lich', name: 'Lich', maxHp: 90, attack: 30, defense: 8, speed: 9,
+    xpReward: 200, goldReward: 100, minFloor: 5, svgComponent: 'LichSVG',
+    lootTable: [{ itemId: 'lich_staff', chance: 0.12 }, { itemId: 'lich_phylactery', chance: 0.08 }, { itemId: 'mana_potion_large', chance: 0.3 }],
+  },
+  {
+    id: 'demon', name: 'Demon', maxHp: 180, attack: 35, defense: 20, speed: 11,
+    xpReward: 400, goldReward: 150, minFloor: 6, svgComponent: 'DemonSVG',
+    lootTable: [{ itemId: 'demon_blade', chance: 0.12 }, { itemId: 'demon_amulet', chance: 0.1 }, { itemId: 'health_potion_large', chance: 0.25 }],
+  },
+  {
+    id: 'death_knight', name: 'Death Knight', maxHp: 140, attack: 26, defense: 22, speed: 7,
+    xpReward: 300, goldReward: 120, minFloor: 6, svgComponent: 'DeathKnightSVG',
+    lootTable: [{ itemId: 'death_knight_armor', chance: 0.1 }, { itemId: 'iron_sword', chance: 0.2 }, { itemId: 'health_potion_large', chance: 0.2 }],
+  },
+  {
+    id: 'elder_dragon', name: 'Elder Dragon', maxHp: 300, attack: 40, defense: 25, speed: 12,
+    xpReward: 1000, goldReward: 500, minFloor: 8, svgComponent: 'ElderDragonSVG',
+    lootTable: [{ itemId: 'elder_dragon_shield', chance: 0.15 }, { itemId: 'dragon_sword', chance: 0.25 }, { itemId: 'health_potion_large', chance: 0.4 }],
+  },
 ];
 
 export function getMonstersForFloor(floor: number): MonsterTemplate[] {
