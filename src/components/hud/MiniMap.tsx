@@ -1,0 +1,66 @@
+import React from 'react';
+import { useGameStore } from '../../stores/gameStore';
+
+const CELL_SIZE = 6;
+const MAP_SIZE = 160;
+
+export default function MiniMap() {
+  const dungeon = useGameStore(s => s.dungeon);
+  const position = useGameStore(s => s.position);
+  const facing = useGameStore(s => s.facing);
+  const exploredMaps = useGameStore(s => s.exploredMaps);
+  const currentFloor = useGameStore(s => s.currentFloor);
+
+  if (!dungeon) return null;
+
+  const explored = exploredMaps[currentFloor];
+  if (!explored) return null;
+
+  const offsetX = Math.max(0, position.x * CELL_SIZE - MAP_SIZE / 2);
+  const offsetY = Math.max(0, position.y * CELL_SIZE - MAP_SIZE / 2);
+
+  const cells: React.ReactElement[] = [];
+  for (let y = 0; y < dungeon.height; y++) {
+    for (let x = 0; x < dungeon.width; x++) {
+      if (!explored[y]?.[x]) continue;
+      const cell = dungeon.grid[y][x];
+      let color = '#333';
+      if (cell.type === 'floor' || cell.type === 'start') color = '#445';
+      else if (cell.type === 'wall') color = '#667';
+      else if (cell.type === 'door') color = '#8B4513';
+      else if (cell.type === 'stairs_down') color = '#44aaff';
+      else if (cell.type === 'chest') color = '#daa520';
+
+      cells.push(
+        <rect
+          key={`${x}-${y}`}
+          x={x * CELL_SIZE}
+          y={y * CELL_SIZE}
+          width={CELL_SIZE}
+          height={CELL_SIZE}
+          fill={color}
+        />
+      );
+    }
+  }
+
+  const arrowRotation = facing === 'N' ? 0 : facing === 'E' ? 90 : facing === 'S' ? 180 : 270;
+
+  return (
+    <div style={{
+      width: MAP_SIZE, height: MAP_SIZE, overflow: 'hidden',
+      border: '2px solid #3a3a5a', borderRadius: 4, background: '#0a0a15',
+    }}>
+      <svg
+        width={dungeon.width * CELL_SIZE}
+        height={dungeon.height * CELL_SIZE}
+        viewBox={`${offsetX} ${offsetY} ${MAP_SIZE} ${MAP_SIZE}`}
+      >
+        {cells}
+        <g transform={`translate(${position.x * CELL_SIZE + CELL_SIZE / 2}, ${position.y * CELL_SIZE + CELL_SIZE / 2}) rotate(${arrowRotation})`}>
+          <polygon points="0,-3 2,2 -2,2" fill="#ff4444" stroke="#cc2222" strokeWidth="0.5" />
+        </g>
+      </svg>
+    </div>
+  );
+}
