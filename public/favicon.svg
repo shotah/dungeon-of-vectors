@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Shield body -->
+  <path d="M32 4 L56 16 L56 34 Q56 52 32 60 Q8 52 8 34 L8 16 Z" fill="#1a1a2e" stroke="#4a6aaa" stroke-width="2.5"/>
+  <!-- Shield inner bevel -->
+  <path d="M32 9 L51 19 L51 33 Q51 48 32 55 Q13 48 13 33 L13 19 Z" fill="#0f0f1a" stroke="#3a3a5a" stroke-width="1"/>
+  <!-- Sword blade -->
+  <rect x="30" y="14" width="4" height="28" rx="1" fill="#c0c8d8"/>
+  <!-- Blade highlight -->
+  <rect x="31" y="14" width="1.5" height="28" rx="0.5" fill="#e0e8f0" opacity="0.6"/>
+  <!-- Cross guard -->
+  <rect x="22" y="40" width="20" height="4" rx="1.5" fill="#daa520"/>
+  <rect x="23" y="41" width="18" height="1.5" rx="0.75" fill="#f0c040" opacity="0.5"/>
+  <!-- Grip -->
+  <rect x="29.5" y="44" width="5" height="8" rx="1" fill="#8B4513"/>
+  <rect x="30.5" y="45" width="1.5" height="6" rx="0.5" fill="#6B3410" opacity="0.6"/>
+  <!-- Pommel -->
+  <circle cx="32" cy="54" r="3" fill="#daa520"/>
+  <circle cx="31.5" cy="53.5" r="1" fill="#f0c040" opacity="0.5"/>
+</svg>
