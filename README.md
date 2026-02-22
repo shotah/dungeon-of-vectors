@@ -1,6 +1,19 @@
-# Dungeon of Vectors
+<p align="center">
+  <img src="public/favicon.svg" width="96" height="96" alt="Dungeon of Vectors" />
+</p>
 
-A first-person dungeon crawler built entirely with React and SVG vector graphics. No sprite sheets, no images -- every visual in the game is rendered with code.
+<h1 align="center">Dungeon of Vectors</h1>
+
+<p align="center">
+  A first-person dungeon crawler built entirely with React and SVG vector graphics.<br/>
+  No sprite sheets, no images -- every visual in the game is rendered with code.
+</p>
+
+<p align="center">
+  <a href="https://dungeon.bldhosting.com"><strong>Play Now</strong></a>
+</p>
+
+---
 
 Inspired by classic dungeon crawlers like Wizardry, the game features procedurally generated dungeons, turn-based combat, a four-character party system, and persistent saves via localStorage.
 
