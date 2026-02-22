@@ -191,6 +191,44 @@ function FrontWall({ depth, cellType }: { depth: number; cellType: CellType }) {
     );
   }
 
+  if (cellType === 'trader') {
+    const tw = (d.right - d.left) * 0.35;
+    const th = (d.bottom - d.top) * 0.65;
+    const tx = (d.left + d.right) / 2 - tw / 2;
+    const ty = d.bottom - th;
+    const headR = tw * 0.22;
+    const headCx = tx + tw / 2;
+    const headCy = ty + headR;
+    return (
+      <g>
+        {/* Body / cloak */}
+        <path
+          d={`M${tx + tw * 0.15},${ty + th * 0.3} Q${tx + tw * 0.5},${ty + th * 0.25} ${tx + tw * 0.85},${ty + th * 0.3} L${tx + tw * 0.9},${ty + th} L${tx + tw * 0.1},${ty + th} Z`}
+          fill="#6a4e23" stroke="#4a3413" strokeWidth="1"
+        />
+        {/* Hood */}
+        <path
+          d={`M${headCx - headR * 1.5},${headCy + headR * 0.5} Q${headCx - headR * 1.8},${headCy - headR * 1.2} ${headCx},${headCy - headR * 1.8} Q${headCx + headR * 1.8},${headCy - headR * 1.2} ${headCx + headR * 1.5},${headCy + headR * 0.5}`}
+          fill="#5a3e13" stroke="#4a3413" strokeWidth="0.8"
+        />
+        {/* Face */}
+        <circle cx={headCx} cy={headCy} r={headR * 0.8} fill="#c4956a" />
+        {/* Eyes */}
+        <circle cx={headCx - headR * 0.3} cy={headCy - headR * 0.1} r={headR * 0.12} fill="#333" />
+        <circle cx={headCx + headR * 0.3} cy={headCy - headR * 0.1} r={headR * 0.12} fill="#333" />
+        {/* Smile */}
+        <path
+          d={`M${headCx - headR * 0.25},${headCy + headR * 0.25} Q${headCx},${headCy + headR * 0.45} ${headCx + headR * 0.25},${headCy + headR * 0.25}`}
+          fill="none" stroke="#8a6a4a" strokeWidth="0.5"
+        />
+        {/* Backpack */}
+        <rect x={tx + tw * 0.65} y={ty + th * 0.35} width={tw * 0.25} height={th * 0.35} rx={2} fill="#8B6914" stroke="#5C4A0A" strokeWidth="0.8" />
+        {/* Gold pouch */}
+        <circle cx={tx + tw * 0.3} cy={ty + th * 0.7} r={tw * 0.08} fill="#daa520" stroke="#b8860b" strokeWidth="0.5" />
+      </g>
+    );
+  }
+
   return (
     <rect
       x={d.left} y={d.top}
@@ -280,6 +318,10 @@ export default function DungeonView() {
       wallElements.push(<FrontWall key={`fw-${d}`} depth={d} cellType="chest" />);
     }
 
+    if (fwdCell === 'trader') {
+      wallElements.push(<FrontWall key={`fw-${d}`} depth={d} cellType="trader" />);
+    }
+
     if (leftCell === 'wall') {
       wallElements.push(<LeftWall key={`lw-${d}`} depth={d} />);
     }
@@ -290,6 +332,7 @@ export default function DungeonView() {
 
   const currentCell = dungeon.grid[position.y]?.[position.x];
   const onStairs = currentCell?.type === 'stairs_down';
+  const onTrader = currentCell?.type === 'trader';
 
   return (
     <svg
@@ -304,6 +347,11 @@ export default function DungeonView() {
       {onStairs && (
         <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT - 15} textAnchor="middle" fill="#aaccff" fontSize="14" fontFamily="monospace">
           Press SPACE to descend
+        </text>
+      )}
+      {onTrader && (
+        <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT - 15} textAnchor="middle" fill="#44dd44" fontSize="14" fontFamily="monospace">
+          A trader is here
         </text>
       )}
       <text x={VIEW_WIDTH / 2} y={20} textAnchor="middle" fill="#667" fontSize="12" fontFamily="monospace">

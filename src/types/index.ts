@@ -1,6 +1,6 @@
 export type Direction = 'N' | 'S' | 'E' | 'W';
 
-export type CellType = 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'start';
+export type CellType = 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'start' | 'trader';
 
 export interface DungeonCell {
   type: CellType;
@@ -69,6 +69,7 @@ export interface Item {
   speed?: number;
   healAmount?: number;
   manaAmount?: number;
+  reviveAmount?: number;
   value: number;
 }
 

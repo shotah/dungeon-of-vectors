@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 
 const CombatScreen = lazy(() => import('../combat/CombatScreen'));
 const InventoryPanel = lazy(() => import('../hud/InventoryPanel'));
+const TraderPanel = lazy(() => import('../hud/TraderPanel'));
 
 function SaveLoadPanel({ onClose }: { onClose: () => void }) {
   const saveGame = useGameStore(s => s.saveGame);
@@ -72,8 +73,11 @@ export default function GameScreen() {
   const position = useGameStore(s => s.position);
   const dungeon = useGameStore(s => s.dungeon);
   const setScreen = useGameStore(s => s.setScreen);
+  const showTrader = useGameStore(s => s.showTrader);
+  const setShowTrader = useGameStore(s => s.setShowTrader);
 
   const onStairs = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'stairs_down' : false;
+  const onTrader = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'trader' : false;
 
   const saveGame = useGameStore(s => s.saveGame);
 
@@ -90,10 +94,11 @@ export default function GameScreen() {
       setShowInventory(false);
       setShowSaveLoad(false);
       setShowStartOver(false);
+      setShowTrader(false);
       return;
     }
 
-    if (combat.active || showInventory || showSaveLoad || showStartOver) return;
+    if (combat.active || showInventory || showSaveLoad || showStartOver || showTrader) return;
 
     switch (e.key) {
       case 'F5': e.preventDefault(); handleQuickSave(); break;
@@ -108,7 +113,7 @@ export default function GameScreen() {
           case 'i': setShowInventory(true); break;
         }
     }
-  }, [combat.active, showInventory, showSaveLoad, showStartOver, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, goDownstairs, handleQuickSave]);
+  }, [combat.active, showInventory, showSaveLoad, showStartOver, showTrader, setShowTrader, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, goDownstairs, handleQuickSave]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -164,6 +169,9 @@ export default function GameScreen() {
           {onStairs && (
             <Button size="sm" variant="gold" onClick={goDownstairs}>⬇ Descend</Button>
           )}
+          {onTrader && (
+            <Button size="sm" variant="gold" onClick={() => setShowTrader(true)}>💰 Trade</Button>
+          )}
         </div>
 
         {/* Message log */}
@@ -184,6 +192,7 @@ export default function GameScreen() {
       <Suspense fallback={null}>
         {combat.active && <CombatScreen />}
         {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
+        {showTrader && <TraderPanel onClose={() => setShowTrader(false)} />}
       </Suspense>
       {showSaveLoad && <SaveLoadPanel onClose={() => setShowSaveLoad(false)} />}
 

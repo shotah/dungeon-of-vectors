@@ -75,6 +75,18 @@ export function PotionGreenIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+export function PotionGoldIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <rect x="9" y="3" width="6" height="4" fill="#aaa" rx="1" />
+      <path d="M9 7 Q6 10 6 16 Q6 21 12 22 Q18 21 18 16 Q18 10 15 7 Z" fill="#daa520" stroke="#b8860b" strokeWidth="0.8" />
+      <ellipse cx="12" cy="14" rx="4" ry="5" fill="#ffdd55" opacity="0.4" />
+      <rect x="10" y="2" width="4" height="2" fill="#8B4513" rx="0.5" />
+      <path d="M10 12 L14 12 M11 10 L13 10 M11 14 L13 14" stroke="#fff" strokeWidth="0.5" opacity="0.5" />
+    </svg>
+  );
+}
+
 export function KeyIcon({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -114,6 +126,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   potion_red: PotionRedIcon,
   potion_blue: PotionBlueIcon,
   potion_green: PotionGreenIcon,
+  potion_gold: PotionGoldIcon,
   key: KeyIcon,
   ring: RingIcon,
   gold: GoldIcon,

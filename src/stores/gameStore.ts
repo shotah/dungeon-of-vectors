@@ -8,6 +8,8 @@ import { CLASS_DEFINITIONS, calculateXpToNext } from '../data/classes';
 import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
 import { getMonstersForFloor, spawnMonster } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
+import { getBuyPrice, getSellPrice } from '../data/trader';
+import { getItem } from '../data/items';
 import {
   buildTurnOrder, getEffectiveAttack,
   performAttack, performSpell, monsterAI, canFlee,
@@ -50,7 +52,7 @@ interface GameState {
     selectedAction: CombatAction | null;
     selectedSpell: Spell | null;
     selectedItem: Item | null;
-    targetingMode: 'enemy' | 'ally' | null;
+    targetingMode: 'enemy' | 'ally' | 'dead_ally' | null;
     barrierActive: boolean;
     defendingIds: Set<string>;
     animating: boolean;
@@ -85,6 +87,12 @@ interface GameState {
   // Inventory
   equipItem: (characterId: string, item: Item) => void;
   applyItemOutOfCombat: (characterId: string, item: Item) => void;
+
+  // Trader
+  showTrader: boolean;
+  setShowTrader: (show: boolean) => void;
+  buyItem: (itemId: string) => void;
+  sellItem: (item: Item) => void;
 
   // Save/Load
   saveGame: (slotId: number) => void;
@@ -222,6 +230,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const lootNames = loot.map(i => i.name).join(', ');
       get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
       playChest();
+    }
+
+    if (cell.type === 'trader') {
+      get().addMessage('A wandering trader beckons you over...', 'info');
+      set({ showTrader: true });
     }
 
     if (cell.type === 'stairs_down') {
@@ -366,8 +379,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   selectCombatItem: (item) => {
+    const mode = item.reviveAmount ? 'dead_ally' as const : 'ally' as const;
     set(state => ({
-      combat: { ...state.combat, selectedItem: item, targetingMode: 'ally' },
+      combat: { ...state.combat, selectedItem: item, targetingMode: mode },
     }));
   },
 
@@ -600,11 +614,50 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
+  showTrader: false,
+  setShowTrader: (show) => set({ showTrader: show }),
+
+  buyItem: (itemId) => {
+    const item = getItem(itemId);
+    if (!item) return;
+    const price = getBuyPrice(item);
+    const { gold } = get();
+    if (gold < price) {
+      get().addMessage("You can't afford that.", 'danger');
+      return;
+    }
+    set(state => ({
+      gold: state.gold - price,
+      inventory: [...state.inventory, item],
+    }));
+    get().addMessage(`Bought ${item.name} for ${price} gold.`, 'loot');
+  },
+
+  sellItem: (item) => {
+    const price = getSellPrice(item);
+    if (price <= 0) {
+      get().addMessage("The trader doesn't want that.", 'info');
+      return;
+    }
+    set(state => {
+      const newInv = [...state.inventory];
+      const idx = newInv.findIndex(i => i === item);
+      if (idx === -1) return {};
+      newInv.splice(idx, 1);
+      return { gold: state.gold + price, inventory: newInv };
+    });
+    get().addMessage(`Sold ${item.name} for ${price} gold.`, 'loot');
+  },
+
   applyItemOutOfCombat: (characterId, item) => {
     if (item.type !== 'consumable') return;
     set(state => {
       const newParty = state.party.map(c => {
         if (c.id !== characterId) return c;
+        if (item.reviveAmount && !c.alive) {
+          const restored = Math.max(1, Math.floor(c.stats.maxHp * item.reviveAmount));
+          return { ...c, alive: true, stats: { ...c.stats, hp: restored } };
+        }
         const newStats = { ...c.stats };
         if (item.healAmount) newStats.hp = Math.min(newStats.maxHp, newStats.hp + item.healAmount);
         if (item.manaAmount) newStats.mp = Math.min(newStats.maxMp, newStats.mp + item.manaAmount);

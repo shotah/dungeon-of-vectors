@@ -35,7 +35,9 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CharacterPortrait characterClass={char.characterClass} size={32} />
                 <div>
-                  <div style={{ fontSize: 12, color: '#ddd' }}>{char.name}</div>
+                  <div style={{ fontSize: 12, color: char.alive ? '#ddd' : '#aa4444' }}>
+                    {char.name}{!char.alive && ' (Dead)'}
+                  </div>
                   <div style={{ fontSize: 10, color: '#888' }}>
                     Lv{char.stats.level} {char.characterClass.charAt(0).toUpperCase() + char.characterClass.slice(1)}
                   </div>
@@ -105,14 +107,18 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
                     Equip
                   </Button>
                 )}
-                {selectedItem.type === 'consumable' && (
-                  <Button size="sm" variant="secondary" onClick={() => {
-                    applyItemOutOfCombat(selectedChar.id, selectedItem);
-                    setSelectedItem(null);
-                  }}>
-                    Use
-                  </Button>
-                )}
+                {selectedItem.type === 'consumable' && (() => {
+                  const isRevive = !!selectedItem.reviveAmount;
+                  const canUse = isRevive ? !selectedChar.alive : selectedChar.alive;
+                  return (
+                    <Button size="sm" variant={isRevive ? 'gold' : 'secondary'} disabled={!canUse} onClick={() => {
+                      applyItemOutOfCombat(selectedChar.id, selectedItem);
+                      setSelectedItem(null);
+                    }}>
+                      {isRevive ? 'Revive' : 'Use'}
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
           )}

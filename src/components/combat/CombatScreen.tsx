@@ -28,6 +28,7 @@ export default function CombatScreen() {
   const consumables = useMemo(() => inventory.filter(i => i.type === 'consumable'), [inventory]);
   const aliveMonsters = useMemo(() => combat.monsters.map((m, i) => ({ m, i })).filter(e => e.m.hp > 0), [combat.monsters]);
   const aliveParty = useMemo(() => party.map((c, i) => ({ c, i })).filter(e => e.c.alive), [party]);
+  const deadParty = useMemo(() => party.map((c, i) => ({ c, i })).filter(e => !e.c.alive), [party]);
   const spells = useMemo(
     () => currentChar ? getSpellsForClass(currentChar.characterClass, currentChar.stats.level) : [],
     [currentChar],
@@ -76,8 +77,8 @@ export default function CombatScreen() {
       return;
     }
 
-    if (combat.targetingMode === 'ally') {
-      const targets = aliveParty;
+    if (combat.targetingMode === 'ally' || combat.targetingMode === 'dead_ally') {
+      const targets = combat.targetingMode === 'dead_ally' ? deadParty : aliveParty;
       if (targets.length === 0) return;
       const clamp = (v: number) => ((v % targets.length) + targets.length) % targets.length;
 
@@ -124,7 +125,7 @@ export default function CombatScreen() {
         case '5': handleSelectAction('flee'); break;
       }
     }
-  }, [combat, isPlayerTurn, currentChar, aliveMonsters, aliveParty, selectedTarget,
+  }, [combat, isPlayerTurn, currentChar, aliveMonsters, aliveParty, deadParty, selectedTarget,
       spells, consumables, endCombat, executePlayerAction, handleSelectAction, handleSelectSpell,
       handleSelectCombatItem]);
 
@@ -217,43 +218,45 @@ export default function CombatScreen() {
         <div style={{ display: 'flex', gap: 8, padding: '8px 12px', flexWrap: 'wrap' }}>
           {party.map((char, i) => {
             const aliveIdx = aliveParty.findIndex(e => e.i === i);
-            const isAllyHighlighted = combat.targetingMode === 'ally' && char.alive && aliveIdx === selectedTarget;
+            const deadIdx = deadParty.findIndex(e => e.i === i);
+            const isAllyTarget = combat.targetingMode === 'ally' && char.alive;
+            const isDeadTarget = combat.targetingMode === 'dead_ally' && !char.alive;
+            const isTargetable = isAllyTarget || isDeadTarget;
+            const targetIdx = isDeadTarget ? deadIdx : aliveIdx;
+            const isHighlighted = isTargetable && targetIdx === selectedTarget;
             return (
               <div
                 key={char.id}
-                role={combat.targetingMode === 'ally' && char.alive ? 'button' : undefined}
-                tabIndex={combat.targetingMode === 'ally' && char.alive ? 0 : undefined}
+                role={isTargetable ? 'button' : undefined}
+                tabIndex={isTargetable ? 0 : undefined}
                 aria-label={`Target ${char.name}`}
                 style={{
                   flex: 1, minWidth: 120, padding: 6, position: 'relative',
-                  background: isAllyHighlighted ? '#2a3a5a' : currentEntity?.id === char.id ? '#1a2a4a' : '#1a1a2e',
-                  border: `1px solid ${isAllyHighlighted ? '#ffcc44' : currentEntity?.id === char.id ? '#4a6aaa' : '#2a2a3a'}`,
-                  borderRadius: 4, opacity: char.alive ? 1 : 0.4,
-                  cursor: combat.targetingMode === 'ally' ? 'pointer' : 'default',
+                  background: isHighlighted ? '#2a3a5a' : currentEntity?.id === char.id ? '#1a2a4a' : '#1a1a2e',
+                  border: `1px solid ${isHighlighted ? '#ffcc44' : currentEntity?.id === char.id ? '#4a6aaa' : '#2a2a3a'}`,
+                  borderRadius: 4,
+                  opacity: char.alive ? 1 : (isDeadTarget ? 0.7 : 0.4),
+                  cursor: isTargetable ? 'pointer' : 'default',
                 }}
-                onClick={() => {
-                  if (combat.targetingMode === 'ally' && char.alive) {
-                    executePlayerAction(i);
-                  }
-                }}
+                onClick={() => { if (isTargetable) executePlayerAction(i); }}
                 onMouseEnter={() => {
-                  if (combat.targetingMode === 'ally' && char.alive)
-                    setSelectedTarget(aliveIdx >= 0 ? aliveIdx : 0);
+                  if (isTargetable) setSelectedTarget(targetIdx >= 0 ? targetIdx : 0);
                 }}
               >
-                {combat.targetingMode === 'ally' && char.alive && (
+                {isTargetable && (
                   <div style={{
                     position: 'absolute', top: -6, left: -6, width: 18, height: 18,
-                    background: isAllyHighlighted ? '#ffcc44' : '#555',
-                    color: isAllyHighlighted ? '#000' : '#ddd',
+                    background: isHighlighted ? '#ffcc44' : '#555',
+                    color: isHighlighted ? '#000' : '#ddd',
                     borderRadius: '50%', fontSize: 11, fontWeight: 'bold',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1,
-                  }}>{aliveIdx + 1}</div>
+                  }}>{targetIdx + 1}</div>
                 )}
-                <div style={{ fontSize: 11, color: '#aaccff' }}>
+                <div style={{ fontSize: 11, color: char.alive ? '#aaccff' : '#aa4444' }}>
                   {char.name} <span style={{ color: '#667' }}>Lv{char.stats.level}</span>
+                  {!char.alive && <span style={{ color: '#aa4444' }}> (Dead)</span>}
                 </div>
-                <StatBar value={char.stats.hp} max={char.stats.maxHp} height={6} color="#44aa44" showText={false} />
+                <StatBar value={char.stats.hp} max={char.stats.maxHp} height={6} color={char.alive ? '#44aa44' : '#aa4444'} showText={false} />
                 {char.stats.maxMp > 0 && (
                   <StatBar value={char.stats.mp} max={char.stats.maxMp} height={5} color="#4488cc" showText={false} />
                 )}
@@ -321,8 +324,10 @@ export default function CombatScreen() {
               {combat.targetingMode === 'enemy' && (
                 <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>A/D to select, W/Enter to confirm, Esc to cancel</div>
               )}
-              {combat.targetingMode === 'ally' && (
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>A/D to select, W/Enter to confirm, Esc to cancel</div>
+              {(combat.targetingMode === 'ally' || combat.targetingMode === 'dead_ally') && (
+                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                  {combat.targetingMode === 'dead_ally' ? 'Select fallen ally: ' : ''}A/D to select, W/Enter to confirm, Esc to cancel
+                </div>
               )}
             </div>
           ) : (

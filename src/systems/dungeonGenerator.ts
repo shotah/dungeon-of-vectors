@@ -218,6 +218,17 @@ export function generateDungeon(seed: number, floor: number): DungeonFloor {
     }
   }
 
+  // Place a wandering trader in a random middle room
+  const traderCandidates = rooms.slice(1, -1).filter(r => {
+    const c = roomCenter(r);
+    return grid[c.y][c.x].type === 'floor';
+  });
+  if (traderCandidates.length > 0) {
+    const traderRoom = rng.pick(traderCandidates);
+    const tc = roomCenter(traderRoom);
+    grid[tc.y][tc.x].type = 'trader';
+  }
+
   // Place random encounters
   placeEncounters(grid, rng, 0.08 + floor * 0.02);
 

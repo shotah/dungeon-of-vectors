@@ -41,7 +41,7 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   {
     id: 'wraith', name: 'Wraith', maxHp: 35, attack: 18, defense: 3, speed: 13,
     xpReward: 80, goldReward: 40, minFloor: 4, svgComponent: 'WraithSVG',
-    lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'silver_ring', chance: 0.1 }],
+    lootTable: [{ itemId: 'mana_potion', chance: 0.3 }, { itemId: 'silver_ring', chance: 0.1 }, { itemId: 'phoenix_feather', chance: 0.05 }],
   },
   {
     id: 'mimic', name: 'Mimic', maxHp: 40, attack: 15, defense: 12, speed: 8,
@@ -51,7 +51,7 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   {
     id: 'dragon', name: 'Dragon', maxHp: 150, attack: 28, defense: 18, speed: 10,
     xpReward: 500, goldReward: 200, minFloor: 5, svgComponent: 'DragonSVG',
-    lootTable: [{ itemId: 'dragon_sword', chance: 0.2 }, { itemId: 'dragon_shield', chance: 0.15 }],
+    lootTable: [{ itemId: 'dragon_sword', chance: 0.2 }, { itemId: 'dragon_shield', chance: 0.15 }, { itemId: 'phoenix_feather', chance: 0.15 }],
   },
   {
     id: 'wyvern', name: 'Wyvern', maxHp: 75, attack: 20, defense: 10, speed: 14,
@@ -61,12 +61,12 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   {
     id: 'lich', name: 'Lich', maxHp: 90, attack: 30, defense: 8, speed: 9,
     xpReward: 200, goldReward: 100, minFloor: 5, svgComponent: 'LichSVG',
-    lootTable: [{ itemId: 'lich_staff', chance: 0.12 }, { itemId: 'lich_phylactery', chance: 0.08 }, { itemId: 'mana_potion_large', chance: 0.3 }],
+    lootTable: [{ itemId: 'lich_staff', chance: 0.12 }, { itemId: 'lich_phylactery', chance: 0.08 }, { itemId: 'mana_potion_large', chance: 0.3 }, { itemId: 'phoenix_feather', chance: 0.1 }],
   },
   {
     id: 'demon', name: 'Demon', maxHp: 180, attack: 35, defense: 20, speed: 11,
     xpReward: 400, goldReward: 150, minFloor: 6, svgComponent: 'DemonSVG',
-    lootTable: [{ itemId: 'demon_blade', chance: 0.12 }, { itemId: 'demon_amulet', chance: 0.1 }, { itemId: 'health_potion_large', chance: 0.25 }],
+    lootTable: [{ itemId: 'demon_blade', chance: 0.12 }, { itemId: 'demon_amulet', chance: 0.1 }, { itemId: 'health_potion_large', chance: 0.25 }, { itemId: 'revive_potion', chance: 0.06 }],
   },
   {
     id: 'death_knight', name: 'Death Knight', maxHp: 140, attack: 26, defense: 22, speed: 7,
@@ -76,7 +76,7 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   {
     id: 'elder_dragon', name: 'Elder Dragon', maxHp: 300, attack: 40, defense: 25, speed: 12,
     xpReward: 1000, goldReward: 500, minFloor: 8, svgComponent: 'ElderDragonSVG',
-    lootTable: [{ itemId: 'elder_dragon_shield', chance: 0.15 }, { itemId: 'dragon_sword', chance: 0.25 }, { itemId: 'health_potion_large', chance: 0.4 }],
+    lootTable: [{ itemId: 'elder_dragon_shield', chance: 0.15 }, { itemId: 'dragon_sword', chance: 0.25 }, { itemId: 'health_potion_large', chance: 0.4 }, { itemId: 'revive_potion', chance: 0.12 }],
   },
 ];
 

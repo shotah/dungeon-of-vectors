@@ -30,6 +30,7 @@ export default function MiniMap() {
       else if (cell.type === 'door') color = '#8B4513';
       else if (cell.type === 'stairs_down') color = '#44aaff';
       else if (cell.type === 'chest') color = '#daa520';
+      else if (cell.type === 'trader') color = '#44dd44';
 
       cells.push(
         <rect

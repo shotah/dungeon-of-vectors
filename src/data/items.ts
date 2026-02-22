@@ -105,6 +105,14 @@ export const ITEMS: Record<string, Item> = {
     id: 'antidote', name: 'Antidote', type: 'consumable', icon: 'potion_green',
     description: 'Cures poison.', value: 15,
   },
+  phoenix_feather: {
+    id: 'phoenix_feather', name: 'Phoenix Feather', type: 'consumable', icon: 'potion_gold',
+    description: 'Revives a fallen ally with 50% HP.', reviveAmount: 0.5, value: 200,
+  },
+  revive_potion: {
+    id: 'revive_potion', name: 'Revive Potion', type: 'consumable', icon: 'potion_gold',
+    description: 'Revives a fallen ally with full HP.', reviveAmount: 1.0, value: 500,
+  },
 
   // Keys
   dungeon_key: {

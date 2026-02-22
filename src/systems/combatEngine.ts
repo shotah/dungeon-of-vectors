@@ -73,6 +73,12 @@ export function performSpell(caster: Character, spell: Spell, targets: (Monster 
 }
 
 export function applyItem(item: Item, target: Character): string {
+  if (item.reviveAmount && !target.alive) {
+    target.alive = true;
+    const restored = Math.max(1, Math.floor(target.stats.maxHp * item.reviveAmount));
+    target.stats.hp = restored;
+    return `${item.name} revives ${target.name} with ${restored} HP!`;
+  }
   if (item.healAmount) {
     target.stats.hp = Math.min(target.stats.maxHp, target.stats.hp + item.healAmount);
     return `${target.name} uses ${item.name}, restoring ${item.healAmount} HP!`;
