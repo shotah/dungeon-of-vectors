@@ -10,6 +10,7 @@ export default function CombatScreen() {
   const party = useGameStore(s => s.party);
   const inventory = useGameStore(s => s.inventory);
   const storeSelectAction = useGameStore(s => s.selectAction);
+  const storeCancelAction = useGameStore(s => s.cancelAction);
   const storeSelectSpell = useGameStore(s => s.selectSpell);
   const storeSelectCombatItem = useGameStore(s => s.selectCombatItem);
   const executePlayerAction = useGameStore(s => s.executePlayerAction);
@@ -49,6 +50,11 @@ export default function CombatScreen() {
     storeSelectCombatItem(item);
   }, [storeSelectCombatItem]);
 
+  const handleCancel = useCallback(() => {
+    setSelectedTarget(0);
+    storeCancelAction();
+  }, [storeCancelAction]);
+
   const handleCombatKey = useCallback((e: KeyboardEvent) => {
     const key = e.key;
 
@@ -69,7 +75,7 @@ export default function CombatScreen() {
         e.preventDefault();
         executePlayerAction(targets[selectedTarget].i);
       } else if (key === 'Escape' || key === 's' || key === 'ArrowDown') {
-        handleSelectAction('attack');
+        handleCancel();
       } else if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < targets.length) executePlayerAction(targets[idx].i);
@@ -88,7 +94,7 @@ export default function CombatScreen() {
         e.preventDefault();
         executePlayerAction(targets[selectedTarget].i);
       } else if (key === 'Escape' || key === 's' || key === 'ArrowDown') {
-        handleSelectAction('attack');
+        handleCancel();
       } else if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < targets.length) executePlayerAction(targets[idx].i);
@@ -97,7 +103,7 @@ export default function CombatScreen() {
     }
 
     if (combat.selectedAction === 'magic' && !combat.selectedSpell) {
-      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleSelectAction('attack'); return; }
+      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleCancel(); return; }
       if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < spells.length && currentChar.stats.mp >= spells[idx].manaCost) {
@@ -108,7 +114,7 @@ export default function CombatScreen() {
     }
 
     if (combat.selectedAction === 'item' && !combat.selectedItem) {
-      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleSelectAction('attack'); return; }
+      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleCancel(); return; }
       if (key >= '1' && key <= '9') {
         const idx = parseInt(key) - 1;
         if (idx < consumables.length) handleSelectCombatItem(consumables[idx]);
@@ -120,14 +126,14 @@ export default function CombatScreen() {
       switch (key) {
         case '1': case 'w': case 'ArrowUp': handleSelectAction('attack'); break;
         case '2': handleSelectAction('defend'); break;
-        case '3': if (currentChar.stats.maxMp > 0) handleSelectAction('magic'); break;
+        case '3': if (spells.length > 0) handleSelectAction('magic'); break;
         case '4': if (consumables.length > 0) handleSelectAction('item'); break;
         case '5': handleSelectAction('flee'); break;
       }
     }
   }, [combat, isPlayerTurn, currentChar, aliveMonsters, aliveParty, deadParty, selectedTarget,
-      spells, consumables, endCombat, executePlayerAction, handleSelectAction, handleSelectSpell,
-      handleSelectCombatItem]);
+      spells, consumables, endCombat, executePlayerAction, handleSelectAction, handleCancel,
+      handleSelectSpell, handleSelectCombatItem]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleCombatKey);
@@ -280,13 +286,15 @@ export default function CombatScreen() {
             <div>
               <div style={{ fontSize: 12, color: '#aaccff', marginBottom: 6 }}>
                 {currentChar.name}'s turn
-                {combat.selectedAction && ` - Select target`}
+                {combat.targetingMode && ' - Select target'}
+                {combat.selectedAction === 'magic' && !combat.selectedSpell && !combat.targetingMode && ' - Select spell'}
+                {combat.selectedAction === 'item' && !combat.selectedItem && !combat.targetingMode && ' - Select item'}
               </div>
               {!combat.selectedAction && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   <Button onClick={() => handleSelectAction('attack')} size="sm">[1] Attack</Button>
                   <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">[2] Defend</Button>
-                  {currentChar.stats.maxMp > 0 && (
+                  {spells.length > 0 && (
                     <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">[3] Magic</Button>
                   )}
                   {consumables.length > 0 && (
@@ -308,7 +316,7 @@ export default function CombatScreen() {
                       [{si + 1}] {spell.name} ({spell.manaCost}MP)
                     </Button>
                   ))}
-                  <Button onClick={() => handleSelectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
+                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
                 </div>
               )}
               {combat.selectedAction === 'item' && !combat.selectedItem && (
@@ -318,15 +326,21 @@ export default function CombatScreen() {
                       [{ci + 1}] {item.name}
                     </Button>
                   ))}
-                  <Button onClick={() => handleSelectAction('attack')} size="sm" variant="secondary">[Esc] Back</Button>
+                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
                 </div>
               )}
               {combat.targetingMode === 'enemy' && (
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>A/D to select, W/Enter to confirm, Esc to cancel</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                  <span style={{ fontSize: 11, color: '#888' }}>A/D to select, W/Enter to confirm</span>
+                </div>
               )}
               {(combat.targetingMode === 'ally' || combat.targetingMode === 'dead_ally') && (
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
-                  {combat.targetingMode === 'dead_ally' ? 'Select fallen ally: ' : ''}A/D to select, W/Enter to confirm, Esc to cancel
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                  <span style={{ fontSize: 11, color: '#888' }}>
+                    {combat.targetingMode === 'dead_ally' ? 'Select fallen ally: ' : ''}A/D to select, W/Enter to confirm
+                  </span>
                 </div>
               )}
             </div>

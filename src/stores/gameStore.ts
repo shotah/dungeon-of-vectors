@@ -77,6 +77,7 @@ interface GameState {
   // Combat actions
   startCombat: () => void;
   selectAction: (action: CombatAction) => void;
+  cancelAction: () => void;
   selectSpell: (spell: Spell) => void;
   selectCombatItem: (item: Item) => void;
   executePlayerAction: (targetIndex: number) => void;
@@ -87,6 +88,10 @@ interface GameState {
   // Inventory
   equipItem: (characterId: string, item: Item) => void;
   applyItemOutOfCombat: (characterId: string, item: Item) => void;
+
+  // Rest
+  resting: boolean;
+  restWithTent: (item: Item) => void;
 
   // Trader
   showTrader: boolean;
@@ -372,6 +377,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ combat: { ...combat, selectedAction: action, targetingMode: 'enemy' } });
   },
 
+  cancelAction: () => {
+    const { combat } = get();
+    set({ combat: { ...combat, selectedAction: null, selectedSpell: null, selectedItem: null, targetingMode: null } });
+  },
+
   selectSpell: (spell) => {
     const targetingMode = spell.target.includes('enemy') ? 'enemy' as const : 'ally' as const;
     set(state => ({
@@ -613,6 +623,33 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       return { party: newParty, inventory: newInv };
     });
+  },
+
+  resting: false,
+
+  restWithTent: (item) => {
+    if (!item.restAll) return;
+    const { combat } = get();
+    if (combat.active) return;
+
+    set(state => {
+      const newInv = [...state.inventory];
+      const idx = newInv.findIndex(i => i === item);
+      if (idx !== -1) newInv.splice(idx, 1);
+      const newParty = state.party.map(c => {
+        if (!c.alive) return c;
+        return {
+          ...c,
+          stats: { ...c.stats, hp: c.stats.maxHp, mp: c.stats.maxMp },
+        };
+      });
+      return { party: newParty, inventory: newInv, resting: true };
+    });
+    get().addMessage('The party sets up camp and rests...', 'system');
+    setTimeout(() => {
+      set({ resting: false });
+      get().addMessage('Everyone feels refreshed!', 'system');
+    }, 3000);
   },
 
   showTrader: false,

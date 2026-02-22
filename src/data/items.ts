@@ -114,6 +114,12 @@ export const ITEMS: Record<string, Item> = {
     description: 'Revives a fallen ally with full HP.', reviveAmount: 1.0, value: 500,
   },
 
+  // Camp
+  tent: {
+    id: 'tent', name: 'Tent', type: 'consumable', icon: 'tent',
+    description: 'Set up camp. Fully restores HP and MP for the whole party.', restAll: true, value: 100,
+  },
+
   // Keys
   dungeon_key: {
     id: 'dungeon_key', name: 'Dungeon Key', type: 'key', icon: 'key',

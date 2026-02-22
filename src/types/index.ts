@@ -70,6 +70,7 @@ export interface Item {
   healAmount?: number;
   manaAmount?: number;
   reviveAmount?: number;
+  restAll?: boolean;
   value: number;
 }
 

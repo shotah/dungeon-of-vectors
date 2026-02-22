@@ -37,6 +37,10 @@ export function getChestLoot(floor: number): Item[] {
     const item = getItem(armor[Math.floor(Math.random() * armor.length)]);
     if (item) loot.push(item);
   }
+  if (floor >= 2 && Math.random() < 0.1) {
+    const tent = getItem('tent');
+    if (tent) loot.push(tent);
+  }
   if (floor >= 4 && Math.random() < 0.08) {
     const feather = getItem('phoenix_feather');
     if (feather) loot.push(feather);

@@ -13,6 +13,7 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const gold = useGameStore(s => s.gold);
   const equipItem = useGameStore(s => s.equipItem);
   const applyItemOutOfCombat = useGameStore(s => s.applyItemOutOfCombat);
+  const restWithTent = useGameStore(s => s.restWithTent);
   const [selectedChar, setSelectedChar] = useState<Character | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
@@ -93,7 +94,21 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
           </div>
 
           {/* Actions for selected item */}
-          {selectedItem && selectedChar && (
+          {selectedItem && selectedItem.restAll && (
+            <div style={{ marginTop: 8, padding: 8, background: '#1a1a2e', borderRadius: 4 }}>
+              <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}>
+                {selectedItem.name} — rest the whole party
+              </div>
+              <Button size="sm" variant="gold" onClick={() => {
+                restWithTent(selectedItem);
+                setSelectedItem(null);
+                onClose();
+              }}>
+                Set Up Camp
+              </Button>
+            </div>
+          )}
+          {selectedItem && selectedChar && !selectedItem.restAll && (
             <div style={{ marginTop: 8, padding: 8, background: '#1a1a2e', borderRadius: 4 }}>
               <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}>
                 {selectedItem.name} → {selectedChar.name}

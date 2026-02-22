@@ -87,6 +87,18 @@ export function PotionGoldIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+export function TentIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <polygon points="12,3 2,20 22,20" fill="#8B6914" stroke="#5C4A0A" strokeWidth="1" />
+      <polygon points="12,3 7,20 17,20" fill="#A07818" stroke="#5C4A0A" strokeWidth="0.5" />
+      <rect x="10" y="13" width="4" height="7" fill="#5C4A0A" rx="1" />
+      <line x1="12" y1="3" x2="12" y2="1" stroke="#888" strokeWidth="1" strokeLinecap="round" />
+      <polygon points="11,1 12,0 13,1" fill="#cc3333" />
+    </svg>
+  );
+}
+
 export function KeyIcon({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -127,6 +139,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   potion_blue: PotionBlueIcon,
   potion_green: PotionGreenIcon,
   potion_gold: PotionGoldIcon,
+  tent: TentIcon,
   key: KeyIcon,
   ring: RingIcon,
   gold: GoldIcon,
