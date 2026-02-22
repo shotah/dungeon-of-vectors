@@ -168,6 +168,7 @@ export interface GameSave {
   maxFloor: number;
   playtime: number;
   timestamp: number;
+  gridChanges?: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
 }
 
 export type GameScreen = 'main_menu' | 'character_creation' | 'game' | 'game_over' | 'intro' | 'victory';

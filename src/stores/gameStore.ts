@@ -39,6 +39,7 @@ interface GameState {
   position: Position;
   facing: Direction;
   exploredMaps: Record<number, boolean[][]>;
+  gridChanges: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
 
   // Combat
   combat: {
@@ -167,6 +168,14 @@ function createExploredMap(width: number, height: number): boolean[][] {
   return Array.from({ length: height }, () => Array(width).fill(false));
 }
 
+function applyGridChanges(dungeon: DungeonFloor, changes: { x: number; y: number; type: DungeonCell['type'] }[]) {
+  for (const c of changes) {
+    if (c.y >= 0 && c.y < dungeon.height && c.x >= 0 && c.x < dungeon.width) {
+      dungeon.grid[c.y][c.x].type = c.type;
+    }
+  }
+}
+
 export const useGameStore = create<GameState>((set, get) => ({
   screen: 'main_menu',
   setScreen: (screen) => set({ screen }),
@@ -182,6 +191,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   position: { x: 0, y: 0 },
   facing: 'N',
   exploredMaps: {},
+  gridChanges: {},
 
   combat: {
     active: false, monsters: [], turnOrder: [], currentTurn: 0,
@@ -219,6 +229,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       position: startPos,
       facing: 'N',
       exploredMaps: explored,
+      gridChanges: {},
       messages: [{ text: 'You descend into the dungeon...', type: 'system', timestamp: Date.now() }],
       screen: 'game',
       playtime: 0,
@@ -266,9 +277,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const loot = getChestLoot(currentFloor);
       const chestGold = getChestGold(currentFloor);
       dungeon.grid[next.y][next.x].type = 'floor';
+      const floorChanges = [...(get().gridChanges[currentFloor] || []), { x: next.x, y: next.y, type: 'floor' as const }];
       set(state => ({
         inventory: [...state.inventory, ...loot],
         gold: state.gold + chestGold,
+        gridChanges: { ...state.gridChanges, [currentFloor]: floorChanges },
       }));
       const lootNames = loot.map(i => i.name).join(', ');
       get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
@@ -381,9 +394,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         const loot = getChestLoot(currentFloor);
         const chestGold = getChestGold(currentFloor);
         dungeon.grid[ahead.y][ahead.x].type = 'floor';
+        const floorChanges = [...(get().gridChanges[currentFloor] || []), { x: ahead.x, y: ahead.y, type: 'floor' as const }];
         set(state => ({
           inventory: [...state.inventory, ...loot],
           gold: state.gold + chestGold,
+          gridChanges: { ...state.gridChanges, [currentFloor]: floorChanges },
         }));
         const lootNames = loot.map(i => i.name).join(', ');
         get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
@@ -417,9 +432,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const loot = getChestLoot(currentFloor);
       const chestGold = getChestGold(currentFloor);
       dungeon.grid[position.y][position.x].type = 'floor';
+      const floorChanges = [...(get().gridChanges[currentFloor] || []), { x: position.x, y: position.y, type: 'floor' as const }];
       set(state => ({
         inventory: [...state.inventory, ...loot],
         gold: state.gold + chestGold,
+        gridChanges: { ...state.gridChanges, [currentFloor]: floorChanges },
       }));
       const lootNames = loot.map(i => i.name).join(', ');
       get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
@@ -903,6 +920,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       position: state.position,
       facing: state.facing,
       exploredMaps: state.exploredMaps,
+      gridChanges: state.gridChanges,
       playtime: state.playtime + elapsed,
       timestamp: Date.now(),
     };
@@ -920,7 +938,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!save) return;
 
     const loadedMaxFloor = save.maxFloor || 10;
+    const loadedGridChanges = save.gridChanges || {};
     const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor, loadedMaxFloor);
+    if (loadedGridChanges[save.currentFloor]) {
+      applyGridChanges(dungeon, loadedGridChanges[save.currentFloor]);
+    }
     set({
       party: save.party,
       inventory: save.inventory,
@@ -929,6 +951,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentFloor: save.currentFloor,
       maxFloor: loadedMaxFloor,
       dungeon,
+      gridChanges: loadedGridChanges,
       position: save.position,
       facing: save.facing,
       exploredMaps: save.exploredMaps,

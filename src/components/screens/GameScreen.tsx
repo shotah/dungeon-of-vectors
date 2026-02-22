@@ -206,15 +206,15 @@ export default function GameScreen() {
             <span style={{ fontSize: 10, color: '#667' }}>
               F{currentFloor} {facing} ({position.x},{position.y})
             </span>
-            <div style={{ display: 'flex', gap: 3 }}>
+            <div style={{ display: 'flex', gap: 4 }}>
               <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
-                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>📦</Button>
+                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>📦</Button>
               <Button size="sm" onClick={handleQuickSave}
-                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>💾</Button>
+                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>💾</Button>
               <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}
-                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>📂</Button>
+                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>📂</Button>
               <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
-                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>✕</Button>
+                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>✕</Button>
             </div>
           </div>
         )}
