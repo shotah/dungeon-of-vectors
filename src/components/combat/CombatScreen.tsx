@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { MonsterSprite } from '../svg/monsters';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
 import { getSpellsForClass } from '../../data/spells';
@@ -19,6 +20,7 @@ export default function CombatScreen() {
   const endCombat = useGameStore(s => s.endCombat);
   const logRef = useRef<HTMLDivElement>(null);
   const [selectedTarget, setSelectedTarget] = useState(0);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -177,10 +179,19 @@ export default function CombatScreen() {
       }}>
         {/* Monster display */}
         <div style={{
-          display: 'flex', justifyContent: 'center', gap: 16, padding: 16,
+          display: 'flex', justifyContent: 'center', gap: 16, padding: isMobile ? '8px 8px' : 16,
           background: 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%)',
-          minHeight: 160, alignItems: 'flex-end', flexWrap: 'wrap',
+          minHeight: isMobile ? 120 : 160, alignItems: 'flex-end', flexWrap: 'wrap',
+          position: 'relative',
         }}>
+          {isPlayerTurn && !combat.selectedAction && !combat.victory && !combat.defeat && (
+            <Button
+              onClick={() => handleSelectAction('flee')}
+              size="sm"
+              variant="danger"
+              style={{ position: 'absolute', top: 6, right: 6, fontSize: 11, padding: '4px 10px', minHeight: 28, zIndex: 2 }}
+            >Flee</Button>
+          )}
           {combat.monsters.map((monster, i) => {
             const aliveIdx = aliveMonsters.findIndex(e => e.i === i);
             const isHighlighted = combat.targetingMode === 'enemy' && monster.hp > 0 && aliveIdx === selectedTarget;
@@ -219,7 +230,7 @@ export default function CombatScreen() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>{aliveIdx + 1}</div>
                 )}
-                <MonsterSprite name={monster.svgComponent} size={100} />
+                <MonsterSprite name={monster.svgComponent} size={isMobile ? 80 : 100} />
                 <div style={{ fontSize: 11, marginTop: 4 }}>{monster.name}</div>
                 <StatBar value={monster.hp} max={monster.maxHp} height={6} color="#cc3333" showText={false} />
               </div>
@@ -316,23 +327,22 @@ export default function CombatScreen() {
               </div>
               {!combat.selectedAction && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Button onClick={() => handleSelectAction('attack')} size="sm">[1] Attack</Button>
-                  <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">[2] Defend</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm">Attack</Button>
+                  <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">Defend</Button>
                   {spells.length > 0 && (
-                    <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">[3] Magic</Button>
+                    <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">Magic</Button>
                   )}
                   {spells.length === 0 && abilities.length > 0 && (
-                    <Button onClick={() => handleSelectAction('ability')} size="sm" variant="gold">[3] Ability</Button>
+                    <Button onClick={() => handleSelectAction('ability')} size="sm" variant="gold">Ability</Button>
                   )}
                   {consumables.length > 0 && (
-                    <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary">[4] Item</Button>
+                    <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary">Item</Button>
                   )}
-                  <Button onClick={() => handleSelectAction('flee')} size="sm" variant="danger">[5] Flee</Button>
                 </div>
               )}
               {combat.selectedAction === 'magic' && !combat.selectedSpell && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {spells.map((spell, si) => (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {spells.map((spell) => (
                     <Button
                       key={spell.id}
                       onClick={() => handleSelectSpell(spell)}
@@ -340,35 +350,39 @@ export default function CombatScreen() {
                       variant="gold"
                       disabled={currentChar.stats.mp < spell.manaCost}
                     >
-                      [{si + 1}] {spell.name} ({spell.manaCost}MP)
+                      {spell.name} ({spell.manaCost}MP)
                     </Button>
                   ))}
-                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                  <div style={{ flex: 1 }} />
+                  <div style={{ flex: 1 }} />
+                  <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
               )}
               {combat.selectedAction === 'ability' && !combat.selectedAbility && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {abilities.map((ability, ai) => (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {abilities.map((ability) => (
                     <Button
                       key={ability.id}
                       onClick={() => handleSelectAbility(ability)}
                       size="sm"
                       variant="gold"
                     >
-                      [{ai + 1}] {ability.name}
+                      {ability.name}
                     </Button>
                   ))}
-                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                  <div style={{ flex: 1 }} />
+                  <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
               )}
               {combat.selectedAction === 'item' && !combat.selectedItem && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {consumables.map((item, ci) => (
                     <Button key={`${item.id}-${ci}`} onClick={() => handleSelectCombatItem(item)} size="sm" variant="secondary">
-                      [{ci + 1}] {item.name}
+                      {item.name}
                     </Button>
                   ))}
-                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                  <div style={{ flex: 1 }} />
+                  <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
               )}
               {combat.targetingMode === 'enemy' && (
@@ -376,16 +390,20 @@ export default function CombatScreen() {
                   <Button onClick={() => executePlayerAction(aliveMonsters[selectedTarget]?.i ?? 0)} size="sm">
                     {combat.selectedAbility ? combat.selectedAbility.name : 'Attack'}
                   </Button>
-                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
-                  <span style={{ fontSize: 11, color: '#888' }}>A/D to select, W/Enter to confirm</span>
+                  {!isMobile && <span style={{ fontSize: 11, color: '#888' }}>A/D to select, Enter to confirm</span>}
+                  <div style={{ flex: 1 }} />
+                  <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
               )}
               {(combat.targetingMode === 'ally' || combat.targetingMode === 'dead_ally') && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
-                  <span style={{ fontSize: 11, color: '#888' }}>
-                    {combat.targetingMode === 'dead_ally' ? 'Select fallen ally: ' : ''}A/D to select, W/Enter to confirm
-                  </span>
+                  {!isMobile && (
+                    <span style={{ fontSize: 11, color: '#888' }}>
+                      {combat.targetingMode === 'dead_ally' ? 'Select fallen ally: ' : ''}A/D to select, Enter to confirm
+                    </span>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
               )}
             </div>

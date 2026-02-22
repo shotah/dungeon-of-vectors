@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { moveInDirection } from '../../utils/direction';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import DungeonView from '../dungeon/DungeonView';
 import PartyBar from '../hud/PartyBar';
 import MiniMap from '../hud/MiniMap';
@@ -79,6 +80,7 @@ export default function GameScreen() {
   const showTrader = useGameStore(s => s.showTrader);
   const setShowTrader = useGameStore(s => s.setShowTrader);
   const resting = useGameStore(s => s.resting);
+  const isMobile = useIsMobile();
 
   const onStairs = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'stairs_down' : false;
   const onTrader = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'trader' : false;
@@ -96,6 +98,7 @@ export default function GameScreen() {
   const [showInventory, setShowInventory] = useState(false);
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'map' | 'party'>('map');
 
   const handleQuickSave = useCallback(() => {
     saveGame(1);
@@ -132,81 +135,154 @@ export default function GameScreen() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  const actionButton = onStairs ? (
+    <Button size="sm" variant="gold" onClick={goDownstairs} style={isMobile ? { flex: 1 } : undefined}>⬇ Descend</Button>
+  ) : onTrader ? (
+    <Button size="sm" variant="gold" onClick={() => setShowTrader(true)} style={isMobile ? { flex: 1 } : undefined}>💰 Trade</Button>
+  ) : !onStairs && !onTrader && facingCellType === 'chest' ? (
+    <Button size="sm" variant="gold" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>🗝 Open Chest</Button>
+  ) : !onStairs && !onTrader && facingCellType === 'trader' ? (
+    <Button size="sm" variant="gold" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>💰 Trade</Button>
+  ) : (onBoss || facingCellType === 'boss') ? (
+    <Button size="sm" variant="danger" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>⚔ Confront</Button>
+  ) : null;
+
+  const btnStyle = isMobile
+    ? { minHeight: 44, fontSize: 15 } as const
+    : { minHeight: 40 } as const;
+
   return (
     <div style={{
-      display: 'flex', minHeight: '100vh',
+      display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+      height: '100vh',
       background: '#0a0a15', fontFamily: 'monospace', color: '#ddd',
+      overflow: 'hidden',
     }}>
-      {/* Main dungeon view */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 12, gap: 8 }}>
-        {/* Top bar */}
+      {/* Desktop: sidebar (left) */}
+      {!isMobile && (
         <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '4px 8px', background: '#1a1a2e', borderRadius: 4,
+          width: 220, padding: '8px 10px', background: '#0f0f1a',
+          borderRight: '1px solid #2a2a3a', display: 'flex', flexDirection: 'column', gap: 8,
+          overflow: 'auto', flexShrink: 0,
         }}>
-          <span style={{ fontSize: 12, color: '#667' }}>
-            Floor {currentFloor} | {facing === 'N' ? 'North' : facing === 'S' ? 'South' : facing === 'E' ? 'East' : 'West'} | ({position.x}, {position.y})
-          </span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}>
-              Inventory (I)
-            </Button>
-            <Button size="sm" onClick={handleQuickSave}>
-              Save (F5)
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}>
-              Load (F9)
-            </Button>
-            <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}>
-              Start Over
-            </Button>
+          {/* Floor / location info */}
+          <div style={{
+            padding: '4px 8px', background: '#1a1a2e', borderRadius: 4,
+            fontSize: 11, color: '#667', textAlign: 'center',
+          }}>
+            Floor {currentFloor} &middot; {facing === 'N' ? 'North' : facing === 'S' ? 'South' : facing === 'E' ? 'East' : 'West'} &middot; ({position.x}, {position.y})
+          </div>
+
+          <MiniMap />
+          <PartyBar />
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 'auto' }}>
+            <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
+              style={{ width: '100%' }}>Inventory (I)</Button>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <Button size="sm" onClick={handleQuickSave} style={{ flex: 1 }}>Save</Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}
+                style={{ flex: 1 }}>Load</Button>
+            </div>
+            <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
+              style={{ width: '100%' }}>Start Over</Button>
           </div>
         </div>
+      )}
+
+      {/* Main content */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        padding: isMobile ? '2px 2px' : 8, gap: isMobile ? 2 : 6,
+        minHeight: 0, minWidth: 0,
+      }}>
+        {/* Mobile: compact top bar (no sidebar on mobile) */}
+        {isMobile && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '2px 4px', background: '#1a1a2e', borderRadius: 4, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 10, color: '#667' }}>
+              F{currentFloor} {facing} ({position.x},{position.y})
+            </span>
+            <div style={{ display: 'flex', gap: 3 }}>
+              <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
+                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>📦</Button>
+              <Button size="sm" onClick={handleQuickSave}
+                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>💾</Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}
+                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>📂</Button>
+              <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
+                style={{ padding: '3px 7px', fontSize: 14, minHeight: 26 }}>✕</Button>
+            </div>
+          </div>
+        )}
 
         {/* Dungeon viewport */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 600 }}>
+        <div style={{
+          flex: isMobile ? undefined : 1,
+          display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center',
+          minHeight: 0,
+        }}>
+          <div style={{ width: '100%', maxWidth: isMobile ? undefined : 700 }}>
             <DungeonView />
           </div>
         </div>
 
-        {/* Movement controls for touch/click */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Button size="sm" variant="secondary" onClick={turnPlayerLeft}>← Turn</Button>
-            <Button size="sm" onClick={moveForward}>↑ Forward</Button>
-            <Button size="sm" variant="secondary" onClick={turnPlayerRight}>Turn →</Button>
+        {/* Movement controls */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 3, flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', gap: 3, justifyContent: 'center', width: isMobile ? '100%' : undefined }}>
+            <Button size="sm" variant="secondary" onClick={turnPlayerLeft}
+              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>← Turn</Button>
+            <Button size="sm" onClick={moveForward}
+              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>↑ Forward</Button>
+            <Button size="sm" variant="secondary" onClick={turnPlayerRight}
+              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>Turn →</Button>
           </div>
-          <Button size="sm" variant="secondary" onClick={moveBackward}>↓ Back</Button>
-          {onStairs && (
-            <Button size="sm" variant="gold" onClick={goDownstairs}>⬇ Descend</Button>
-          )}
-          {onTrader && (
-            <Button size="sm" variant="gold" onClick={() => setShowTrader(true)}>💰 Trade</Button>
-          )}
-          {!onStairs && !onTrader && facingCellType === 'chest' && (
-            <Button size="sm" variant="gold" onClick={interact}>🗝 Open Chest</Button>
-          )}
-          {!onStairs && !onTrader && facingCellType === 'trader' && (
-            <Button size="sm" variant="gold" onClick={interact}>💰 Trade</Button>
-          )}
-          {(onBoss || facingCellType === 'boss') && (
-            <Button size="sm" variant="danger" onClick={interact}>⚔ Confront the Wizard</Button>
-          )}
+          <div style={{
+            display: isMobile ? 'grid' : 'flex',
+            gridTemplateColumns: '1fr 1fr', gap: 3,
+            justifyContent: 'center', width: isMobile ? '100%' : undefined,
+          }}>
+            <Button size="sm" variant="secondary" onClick={moveBackward}
+              style={{ ...btnStyle, ...(isMobile ? {} : {}) }}>↓ Back</Button>
+            {actionButton}
+          </div>
         </div>
 
-        {/* Message log */}
-        <MessageLog />
-      </div>
+        {/* Mobile: tabbed info panel */}
+        {isMobile && (
+          <div style={{ flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 2 }}>
+              {(['map', 'party'] as const).map(tab => (
+                <button key={tab} onClick={() => setMobileTab(tab)} style={{
+                  flex: 1, padding: '10px 0', background: mobileTab === tab ? '#1a1a2e' : '#0f0f1a',
+                  border: `1px solid ${mobileTab === tab ? '#4a6aaa' : '#2a2a3a'}`,
+                  borderBottom: mobileTab === tab ? 'none' : '1px solid #2a2a3a',
+                  borderRadius: '4px 4px 0 0', color: mobileTab === tab ? '#aaccff' : '#667',
+                  fontSize: 13, fontFamily: 'monospace', cursor: 'pointer',
+                }}>
+                  {tab === 'map' ? 'Map' : 'Party'}
+                </button>
+              ))}
+            </div>
+            <div style={{
+              background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: '0 0 4px 4px',
+              padding: 4, maxHeight: 220, overflow: 'auto',
+            }}>
+              {mobileTab === 'map' ? <MiniMap mobile /> : <PartyBar />}
+            </div>
+          </div>
+        )}
 
-      {/* Right sidebar */}
-      <div style={{
-        width: 220, padding: 12, background: '#0f0f1a',
-        borderLeft: '1px solid #2a2a3a', display: 'flex', flexDirection: 'column', gap: 12,
-        overflow: 'auto',
-      }}>
-        <MiniMap />
-        <PartyBar />
+        {/* Message log */}
+        <div style={{ flexShrink: 0 }}>
+          <MessageLog />
+        </div>
       </div>
 
       {/* Overlays */}

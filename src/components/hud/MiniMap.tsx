@@ -3,7 +3,6 @@ import { useGameStore } from '../../stores/gameStore';
 import type { DungeonFloor } from '../../types';
 
 const CELL_SIZE = 6;
-const MAP_SIZE = 160;
 
 function FloorProgress({ dungeon, explored }: { dungeon: DungeonFloor; explored: boolean[][] }) {
   const ic = dungeon.initialCounts;
@@ -56,7 +55,8 @@ function FloorProgress({ dungeon, explored }: { dungeon: DungeonFloor; explored:
   );
 }
 
-export default function MiniMap() {
+export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
+  const MAP_SIZE = mobile ? 160 : 160;
   const dungeon = useGameStore(s => s.dungeon);
   const position = useGameStore(s => s.position);
   const facing = useGameStore(s => s.facing);
