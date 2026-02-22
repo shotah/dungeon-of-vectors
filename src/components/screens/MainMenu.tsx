@@ -80,6 +80,13 @@ export default function MainMenu() {
       <div style={{ color: '#334', fontSize: 10, fontFamily: 'monospace', marginTop: 40 }}>
         Use WASD or Arrow Keys to move | SPACE to interact
       </div>
+
+      <div style={{
+        position: 'fixed', bottom: 8, right: 12,
+        color: '#333', fontSize: 10, fontFamily: 'monospace',
+      }}>
+        v{__APP_VERSION__}
+      </div>
     </div>
   );
 }
