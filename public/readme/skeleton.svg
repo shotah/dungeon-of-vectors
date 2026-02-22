@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="-10 -5 140 130">
+  <rect x="-10" y="-5" width="160" height="140" fill="#0f0f1a" rx="8"/>
+  <!-- Skull -->
+  <ellipse cx="60" cy="28" rx="18" ry="20" fill="#e8e0d0" stroke="#8a8070" stroke-width="1.5"/>
+  <!-- Eye sockets -->
+  <ellipse cx="52" cy="25" rx="5" ry="6" fill="#1a1a2e"/>
+  <ellipse cx="68" cy="25" rx="5" ry="6" fill="#1a1a2e"/>
+  <!-- Red eye glow -->
+  <circle cx="52" cy="25" r="2" fill="#ff3333" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="68" cy="25" r="2" fill="#ff3333" opacity="0.8">
+    <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Nose hole -->
+  <path d="M58 32 L60 36 L62 32" fill="none" stroke="#8a8070" stroke-width="1"/>
+  <!-- Teeth -->
+  <path d="M50 38 L54 41 L58 38 L62 41 L66 38 L70 41" fill="none" stroke="#e8e0d0" stroke-width="1.5"/>
+  <!-- Spine/Neck -->
+  <rect x="57" y="46" width="6" height="8" fill="#d8d0c0" stroke="#8a8070" stroke-width="0.5"/>
+  <!-- Ribcage -->
+  <path d="M42 54 Q60 48 78 54" fill="none" stroke="#d8d0c0" stroke-width="2"/>
+  <path d="M44 60 Q60 54 76 60" fill="none" stroke="#d8d0c0" stroke-width="2"/>
+  <path d="M46 66 Q60 60 74 66" fill="none" stroke="#d8d0c0" stroke-width="2"/>
+  <line x1="60" y1="48" x2="60" y2="80" stroke="#d8d0c0" stroke-width="2"/>
+  <!-- Pelvis -->
+  <path d="M48 78 Q60 85 72 78" fill="none" stroke="#d8d0c0" stroke-width="2"/>
+  <!-- Arms -->
+  <line x1="42" y1="54" x2="28" y2="70" stroke="#d8d0c0" stroke-width="2.5"/>
+  <line x1="28" y1="70" x2="20" y2="58" stroke="#d8d0c0" stroke-width="2"/>
+  <line x1="78" y1="54" x2="92" y2="70" stroke="#d8d0c0" stroke-width="2.5"/>
+  <line x1="92" y1="70" x2="100" y2="60" stroke="#d8d0c0" stroke-width="2"/>
+  <!-- Sword in right hand -->
+  <rect x="97" y="38" width="3" height="24" fill="#aaa" stroke="#888" stroke-width="0.5" rx="1"/>
+  <rect x="94" y="58" width="9" height="3" fill="#8B4513" rx="1"/>
+  <!-- Legs -->
+  <line x1="52" y1="80" x2="44" y2="105" stroke="#d8d0c0" stroke-width="2.5"/>
+  <line x1="68" y1="80" x2="76" y2="105" stroke="#d8d0c0" stroke-width="2.5"/>
+  <!-- Feet -->
+  <line x1="44" y1="105" x2="38" y2="110" stroke="#d8d0c0" stroke-width="2"/>
+  <line x1="76" y1="105" x2="82" y2="110" stroke="#d8d0c0" stroke-width="2"/>
+</svg>

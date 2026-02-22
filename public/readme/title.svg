@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="140" viewBox="0 0 500 140">
+  <rect width="500" height="140" fill="#0f0f1a" rx="8"/>
+  <defs>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffcc44"/>
+      <stop offset="100%" stop-color="#aa7722"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <text x="250" y="60" text-anchor="middle" fill="url(#titleGrad)" font-size="42" font-family="monospace" font-weight="bold" filter="url(#glow)">DUNGEON</text>
+  <text x="250" y="98" text-anchor="middle" fill="url(#titleGrad)" font-size="32" font-family="monospace" font-weight="bold" filter="url(#glow)">OF VECTORS</text>
+  <text x="250" y="126" text-anchor="middle" fill="#667" font-size="13" font-family="monospace">A Dungeon Crawler in Pure SVG</text>
+  <!-- Decorative swords -->
+  <g transform="translate(70, 72) rotate(-30)">
+    <rect x="-2" y="-30" width="4" height="40" fill="#aaa"/>
+    <rect x="-6" y="8" width="12" height="4" fill="#8B4513" rx="1"/>
+  </g>
+  <g transform="translate(430, 72) rotate(30)">
+    <rect x="-2" y="-30" width="4" height="40" fill="#aaa"/>
+    <rect x="-6" y="8" width="12" height="4" fill="#8B4513" rx="1"/>
+  </g>
+</svg>

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="280" viewBox="0 0 500 280">
+  <!-- Night sky -->
+  <rect width="500" height="280" fill="#0a0a18"/>
+  <!-- Stars -->
+  <circle cx="25" cy="15" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite"/></circle>
+  <circle cx="75" cy="30" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.7s" repeatCount="indefinite"/></circle>
+  <circle cx="150" cy="12" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.9s" repeatCount="indefinite"/></circle>
+  <circle cx="250" cy="25" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.1s" repeatCount="indefinite"/></circle>
+  <circle cx="350" cy="18" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.3s" repeatCount="indefinite"/></circle>
+  <circle cx="425" cy="35" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.5s" repeatCount="indefinite"/></circle>
+  <circle cx="475" cy="10" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.7s" repeatCount="indefinite"/></circle>
+  <circle cx="50" cy="50" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="2.9s" repeatCount="indefinite"/></circle>
+  <circle cx="188" cy="45" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.1s" repeatCount="indefinite"/></circle>
+  <circle cx="313" cy="40" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.3s" repeatCount="indefinite"/></circle>
+  <circle cx="388" cy="55" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.5s" repeatCount="indefinite"/></circle>
+  <circle cx="113" cy="38" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.7s" repeatCount="indefinite"/></circle>
+  <circle cx="213" cy="20" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="3.9s" repeatCount="indefinite"/></circle>
+  <circle cx="450" cy="48" r="0.8" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.3;0.8;0.3" dur="4.1s" repeatCount="indefinite"/></circle>
+  <!-- Distant hills -->
+  <path d="M0 180 Q62 145 150 168 Q225 140 313 162 Q400 132 500 155 L500 280 L0 280 Z" fill="#1a1a2e"/>
+  <!-- Houses -->
+  <rect x="75" y="188" width="38" height="30" fill="#3a2a1a" stroke="#2a1a0a" stroke-width="1"/>
+  <polygon points="68,188 94,170 120,188" fill="#4a3020"/>
+  <rect x="188" y="193" width="31" height="24" fill="#3a2a1a" stroke="#2a1a0a" stroke-width="1"/>
+  <polygon points="181,193 203,178 225,193" fill="#4a3020"/>
+  <rect x="300" y="190" width="35" height="28" fill="#3a2a1a" stroke="#2a1a0a" stroke-width="1"/>
+  <polygon points="294,190 318,174 341,190" fill="#4a3020"/>
+  <!-- Flames on house 1 -->
+  <ellipse cx="94" cy="183" rx="12" ry="18" fill="#ff4400" opacity="0.7">
+    <animate attributeName="ry" values="18;24;15;22;18" dur="0.7s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="94" cy="179" rx="7" ry="11" fill="#ff8800" opacity="0.8">
+    <animate attributeName="ry" values="11;16;10;14;11" dur="0.5s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="94" cy="176" rx="4" ry="6" fill="#ffcc00" opacity="0.9">
+    <animate attributeName="ry" values="6;10;5;9;6" dur="0.4s" repeatCount="indefinite"/>
+  </ellipse>
+  <!-- Flames on house 2 -->
+  <ellipse cx="203" cy="174" rx="12" ry="18" fill="#ff4400" opacity="0.7">
+    <animate attributeName="ry" values="18;24;15;22;18" dur="0.8s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="203" cy="170" rx="7" ry="11" fill="#ff8800" opacity="0.8">
+    <animate attributeName="ry" values="11;16;10;14;11" dur="0.6s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="203" cy="167" rx="4" ry="6" fill="#ffcc00" opacity="0.9">
+    <animate attributeName="ry" values="6;10;5;9;6" dur="0.5s" repeatCount="indefinite"/>
+  </ellipse>
+  <!-- Flames on house 3 -->
+  <ellipse cx="318" cy="170" rx="12" ry="18" fill="#ff4400" opacity="0.7">
+    <animate attributeName="ry" values="18;24;15;22;18" dur="0.9s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="318" cy="166" rx="7" ry="11" fill="#ff8800" opacity="0.8">
+    <animate attributeName="ry" values="11;16;10;14;11" dur="0.7s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="318" cy="163" rx="4" ry="6" fill="#ffcc00" opacity="0.9">
+    <animate attributeName="ry" values="6;10;5;9;6" dur="0.6s" repeatCount="indefinite"/>
+  </ellipse>
+  <!-- Fire glow -->
+  <circle cx="200" cy="188" r="100" fill="#ff4400" opacity="0.06">
+    <animate attributeName="opacity" values="0.06;0.1;0.06" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Smoke -->
+  <circle cx="100" cy="155" r="10" fill="#444" opacity="0.3">
+    <animate attributeName="cy" values="155;125;95" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.15;0" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="10;17;24" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="206" cy="142" r="10" fill="#444" opacity="0.3">
+    <animate attributeName="cy" values="142;112;82" dur="3.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.15;0" dur="3.5s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="10;17;24" dur="3.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="322" cy="148" r="10" fill="#444" opacity="0.3">
+    <animate attributeName="cy" values="148;118;88" dur="4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.15;0" dur="4s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="10;17;24" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Wizard silhouette on hill -->
+  <path d="M413 178 Q425 142 443 125 Q430 132 425 122 L425 117 L428 108 L425 102 Q423 90 425 78 L427 78 Q429 90 427 102 L430 108 L427 117 L427 122 Q432 132 438 125 L435 178 Z" fill="#110011"/>
+  <!-- Wizard hat -->
+  <path d="M418 122 L425 85 L432 122" fill="#110011"/>
+  <!-- Staff -->
+  <line x1="438" y1="102" x2="443" y2="178" stroke="#110011" stroke-width="2.5"/>
+  <!-- Staff orb glow -->
+  <circle cx="438" cy="100" r="6" fill="#ff3300" opacity="0.7">
+    <animate attributeName="r" values="6;8;6" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="438" cy="100" r="2.5" fill="#ff8844" opacity="0.9"/>
+  <!-- Ground -->
+  <rect x="0" y="218" width="500" height="62" fill="#1a120a"/>
+  <ellipse cx="250" cy="218" rx="250" ry="7" fill="#2a1a0a"/>
+  <!-- Frightened townspeople -->
+  <circle cx="138" cy="210" r="5" fill="#1a1a2e"/>
+  <rect x="134" y="215" width="8" height="12" fill="#1a1a2e" rx="1"/>
+  <circle cx="156" cy="208" r="5" fill="#1a1a2e"/>
+  <rect x="152" y="213" width="8" height="14" fill="#1a1a2e" rx="1"/>
+  <circle cx="244" cy="209" r="4.5" fill="#1a1a2e"/>
+  <rect x="240.5" y="213.5" width="7" height="12" fill="#1a1a2e" rx="1"/>
+</svg>
