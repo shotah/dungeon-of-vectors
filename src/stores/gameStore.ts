@@ -307,7 +307,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set({
       combat: {
-        active: true, monsters, turnOrder, currentTurn: 0,
+        active: true, monsters, turnOrder, currentTurn: -1,
         log: [`Encountered: ${monsterNames}!`],
         victory: false, defeat: false,
         selectedAction: null, selectedSpell: null, selectedItem: null,
@@ -317,6 +317,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
     get().addMessage(`Ambushed by ${monsterNames}!`, 'combat');
     playCombatStart();
+    setTimeout(() => get().advanceTurn(), 300);
   },
 
   selectAction: (action) => {
@@ -510,7 +511,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const newTurnOrder = buildTurnOrder(party, aliveMonsters);
       set({
         combat: {
-          ...combat, currentTurn: 0, turnOrder: newTurnOrder,
+          ...combat, currentTurn: -1, turnOrder: newTurnOrder,
           defendingIds: new Set(), selectedAction: null,
         },
       });
