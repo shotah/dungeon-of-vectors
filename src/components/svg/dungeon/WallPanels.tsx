@@ -1,5 +1,5 @@
 import type { CellType } from '../../../types';
-import { DEPTHS, EXTENDED_DEPTH } from './dungeonConstants';
+import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
 
 export function SideWall({ depth, side }: { depth: number; side: 'left' | 'right' }) {
   if (depth >= DEPTHS.length) return null;
@@ -54,28 +54,71 @@ export function FrontWall({ depth, cellType, side }: { depth: number; cellType?:
   }
 
   if (cellType === 'stairs_down') {
-    const sw = (d.right - d.left) * 0.6;
-    const sh = (d.bottom - d.top) * 0.5;
-    const sx = (d.left + d.right) / 2 - sw / 2;
-    const sy = d.bottom - sh;
-    const stepCount = 5;
-    const stepH = sh / stepCount;
-    const stepW = sw / stepCount;
+    const next = depth < DEPTHS.length - 1 ? DEPTHS[depth + 1] : EXTENDED_DEPTH;
+    const vanishX = VIEW_WIDTH / 2;
+    const vanishY = VIEW_HEIGHT / 2;
+
+    const nearY = d.bottom;
+    const farY = next.bottom;
+    const tNear = (nearY - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+    const tFar = (farY - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+
+    const inset = 0.2;
+    const nearL = d.left + (d.right - d.left) * inset;
+    const nearR = d.right - (d.right - d.left) * inset;
+    const floorNearL = nearL + (vanishX - nearL) * tNear;
+    const floorNearR = nearR + (vanishX - nearR) * tNear;
+    const floorFarL = nearL + (vanishX - nearL) * tFar;
+    const floorFarR = nearR + (vanishX - nearR) * tFar;
+
+    const holeW = floorNearR - floorNearL;
+    const holeSpan = Math.abs(farY - nearY);
+    const stepCount = 4;
+    const dir = farY < nearY ? -1 : 1;
+
     return (
       <g>
+        {/* Dark hole cut into the floor */}
+        <polygon
+          points={`${floorNearL},${nearY} ${floorNearR},${nearY} ${floorFarR},${farY} ${floorFarL},${farY}`}
+          fill="#010108"
+        />
+
+        {/* Stone rim around the hole */}
+        <polygon
+          points={`${floorNearL},${nearY} ${floorNearR},${nearY} ${floorFarR},${farY} ${floorFarL},${farY}`}
+          fill="none" stroke="#4a4a6a" strokeWidth="1.5"
+        />
+
+        {/* Steps: treads with visible risers for 3D depth */}
         {Array.from({ length: stepCount }, (_, i) => {
-          const ri = stepCount - 1 - i;
+          const t = (i + 1) / (stepCount + 1);
+          const stepY = nearY + dir * t * holeSpan * 0.8;
+          const insetPct = t * 0.25;
+          const sL = floorNearL + holeW * insetPct;
+          const sR = floorNearR - holeW * insetPct;
+          const treadH = holeSpan * 0.04;
+          const riserH = holeSpan * 0.03;
+          const shade = Math.max(35, 80 - i * 15);
+          const rY = dir > 0 ? stepY : stepY - treadH;
+          const riY = dir > 0 ? stepY - riserH : stepY + treadH;
           return (
-            <rect
-              key={i}
-              x={sx + ri * (stepW / 2)}
-              y={sy + i * stepH}
-              width={sw - ri * stepW}
-              height={stepH}
-              fill="url(#stairsGrad)"
-              stroke="#222244"
-              strokeWidth="0.5"
-            />
+            <g key={i}>
+              {/* Riser (vertical front face) */}
+              <rect
+                x={sL} y={riY}
+                width={sR - sL} height={riserH}
+                fill={`rgb(${shade - 20},${shade - 20},${shade - 5})`}
+              />
+              {/* Tread (horizontal top face) */}
+              <rect
+                x={sL} y={rY}
+                width={sR - sL} height={treadH}
+                fill={`rgb(${shade},${shade},${shade + 25})`}
+                stroke="#555577"
+                strokeWidth="0.5"
+              />
+            </g>
           );
         })}
       </g>
