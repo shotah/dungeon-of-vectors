@@ -292,9 +292,9 @@ export default function CombatScreen() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1,
                   }}>{targetIdx + 1}</div>
                 )}
-                <div style={{ fontSize: 11, color: char.alive ? '#aaccff' : '#aa4444' }}>
-                  {char.name} <span style={{ color: '#667', textTransform: 'capitalize' }}>{char.characterClass}</span>
-                  {!char.alive && <span style={{ color: '#aa4444' }}> (Dead)</span>}
+                <div style={{ fontSize: 11, color: char.alive ? '#aaccff' : '#aa4444', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{char.name} <span style={{ color: '#667', textTransform: 'capitalize' }}>{char.characterClass}</span></span>
+                  <span style={{ color: '#667' }}>{char.alive ? `Lv${char.stats.level}` : 'Dead'}</span>
                 </div>
                 <StatBar value={char.stats.hp} max={char.stats.maxHp} height={6} color={char.alive ? '#44aa44' : '#aa4444'} showText={false} />
                 {char.stats.maxMp > 0 && (

@@ -230,29 +230,23 @@ export default function GameScreen() {
           </div>
         </div>
 
-        {/* Movement controls */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          gap: 3, flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', gap: 3, justifyContent: 'center', width: isMobile ? '100%' : undefined }}>
-            <Button size="sm" variant="secondary" onClick={turnPlayerLeft}
-              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>← Turn</Button>
-            <Button size="sm" onClick={moveForward}
-              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>↑ Forward</Button>
-            <Button size="sm" variant="secondary" onClick={turnPlayerRight}
-              style={{ ...btnStyle, ...(isMobile ? { flex: 1 } : {}) }}>Turn →</Button>
-          </div>
+        {/* Desktop: movement controls here */}
+        {!isMobile && (
           <div style={{
-            display: isMobile ? 'grid' : 'flex',
-            gridTemplateColumns: '1fr 1fr', gap: 3,
-            justifyContent: 'center', width: isMobile ? '100%' : undefined,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 3, flexShrink: 0,
           }}>
-            <Button size="sm" variant="secondary" onClick={moveBackward}
-              style={{ ...btnStyle, ...(isMobile ? {} : {}) }}>↓ Back</Button>
-            {actionButton}
+            <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+              <Button size="sm" variant="secondary" onClick={turnPlayerLeft} style={btnStyle}>← Turn</Button>
+              <Button size="sm" onClick={moveForward} style={btnStyle}>↑ Forward</Button>
+              <Button size="sm" variant="secondary" onClick={turnPlayerRight} style={btnStyle}>Turn →</Button>
+            </div>
+            <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+              <Button size="sm" variant="secondary" onClick={moveBackward} style={btnStyle}>↓ Back</Button>
+              {actionButton}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Mobile: tabbed info panel */}
         {isMobile && (
@@ -283,6 +277,29 @@ export default function GameScreen() {
         <div style={{ flexShrink: 0 }}>
           <MessageLog />
         </div>
+
+        {/* Mobile: movement controls at the bottom */}
+        {isMobile && (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 3, flexShrink: 0,
+          }}>
+            <div style={{ display: 'flex', gap: 3, justifyContent: 'center', width: '100%' }}>
+              <Button size="sm" variant="secondary" onClick={turnPlayerLeft}
+                style={{ ...btnStyle, flex: 1 }}>← Turn</Button>
+              <Button size="sm" onClick={moveForward}
+                style={{ ...btnStyle, flex: 1 }}>↑ Forward</Button>
+              <Button size="sm" variant="secondary" onClick={turnPlayerRight}
+                style={{ ...btnStyle, flex: 1 }}>Turn →</Button>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, width: '100%',
+            }}>
+              <Button size="sm" variant="secondary" onClick={moveBackward} style={btnStyle}>↓ Back</Button>
+              {actionButton}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Overlays */}
