@@ -32,6 +32,20 @@ export const SPELLS: Spell[] = [
     id: 'barrier', name: 'Barrier', description: 'Raises the defense of all allies for the battle.',
     manaCost: 10, target: 'all_allies', learnedByClass: 'cleric', levelRequired: 2,
   },
+
+  // Ranger spells
+  {
+    id: 'poison_arrow', name: 'Poison Arrow', description: 'Fires a venomous arrow at one enemy.',
+    manaCost: 4, damage: 16, target: 'single_enemy', learnedByClass: 'ranger', levelRequired: 1,
+  },
+  {
+    id: 'volley', name: 'Volley', description: 'Rains arrows on all enemies.',
+    manaCost: 10, damage: 14, target: 'all_enemies', learnedByClass: 'ranger', levelRequired: 3,
+  },
+  {
+    id: 'natures_mend', name: "Nature's Mend", description: 'Calls on nature to heal one ally.',
+    manaCost: 8, healing: 25, target: 'single_ally', learnedByClass: 'ranger', levelRequired: 2,
+  },
 ];
 
 export function getSpellsForClass(characterClass: string, level: number): Spell[] {

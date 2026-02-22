@@ -64,6 +64,18 @@ export const CLASS_DEFINITIONS: Record<CharacterClass, ClassDefinition> = {
     },
     growthRates: { hp: 8, mp: 5, attack: 2, defense: 3, speed: 1 },
   },
+  ranger: {
+    name: 'Ranger',
+    characterClass: 'ranger',
+    description: 'A skilled hunter with keen aim. Balanced stats with nature magic.',
+    defaultRow: 'back',
+    baseStats: {
+      maxHp: 34, hp: 34, maxMp: 12, mp: 12,
+      attack: 13, defense: 8, speed: 12,
+      level: 1, xp: 0, xpToNext: 100,
+    },
+    growthRates: { hp: 8, mp: 3, attack: 3, defense: 2, speed: 3 },
+  },
 };
 
 export function calculateXpToNext(level: number): number {

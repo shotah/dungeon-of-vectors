@@ -70,7 +70,10 @@ export default function GameScreen() {
   const currentFloor = useGameStore(s => s.currentFloor);
   const facing = useGameStore(s => s.facing);
   const position = useGameStore(s => s.position);
+  const dungeon = useGameStore(s => s.dungeon);
   const setScreen = useGameStore(s => s.setScreen);
+
+  const onStairs = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'stairs_down' : false;
 
   const saveGame = useGameStore(s => s.saveGame);
 
@@ -158,6 +161,9 @@ export default function GameScreen() {
             <Button size="sm" variant="secondary" onClick={turnPlayerRight}>Turn →</Button>
           </div>
           <Button size="sm" variant="secondary" onClick={moveBackward}>↓ Back</Button>
+          {onStairs && (
+            <Button size="sm" variant="gold" onClick={goDownstairs}>⬇ Descend</Button>
+          )}
         </div>
 
         {/* Message log */}

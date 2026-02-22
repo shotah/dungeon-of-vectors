@@ -23,7 +23,7 @@ export interface Position {
   y: number;
 }
 
-export type CharacterClass = 'warrior' | 'mage' | 'rogue' | 'cleric';
+export type CharacterClass = 'warrior' | 'mage' | 'rogue' | 'cleric' | 'ranger';
 
 export type FormationRow = 'front' | 'back';
 
