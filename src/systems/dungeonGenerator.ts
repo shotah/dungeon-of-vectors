@@ -243,7 +243,18 @@ export function generateDungeon(seed: number, floor: number, maxFloor?: number):
     grid[y][width - 1] = { type: 'wall', explored: false, hasEncounter: false };
   }
 
-  return { width, height, grid, floor, seed };
+  let chests = 0, traders = 0, stairs = 0, boss = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const t = grid[y][x].type;
+      if (t === 'chest') chests++;
+      else if (t === 'trader') traders++;
+      else if (t === 'stairs_down') stairs++;
+      else if (t === 'boss') boss++;
+    }
+  }
+
+  return { width, height, grid, floor, seed, initialCounts: { chests, traders, stairs, boss } };
 }
 
 export function getStartPosition(dungeon: DungeonFloor): Position {

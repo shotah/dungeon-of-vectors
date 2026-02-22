@@ -10,12 +10,20 @@ export interface DungeonCell {
   locked?: boolean;
 }
 
+export interface FloorCounts {
+  chests: number;
+  traders: number;
+  stairs: number;
+  boss: number;
+}
+
 export interface DungeonFloor {
   width: number;
   height: number;
   grid: DungeonCell[][];
   floor: number;
   seed: number;
+  initialCounts: FloorCounts;
 }
 
 export interface Position {

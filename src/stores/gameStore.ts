@@ -67,6 +67,7 @@ interface GameState {
   startTime: number;
 
   maxFloor: number;
+  stepsSinceEncounter: number;
 
   // Actions
   initNewGame: (partySetup: { name: string; characterClass: string }[], maxFloor: number) => void;
@@ -170,6 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   playtime: 0,
   startTime: Date.now(),
+  stepsSinceEncounter: 99,
 
   initNewGame: (partySetup, maxFloor) => {
     const seed = generateSeed();
@@ -193,6 +195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       screen: 'game',
       playtime: 0,
       startTime: Date.now(),
+      stepsSinceEncounter: 99,
       combat: {
         active: false, monsters: [], turnOrder: [], currentTurn: 0,
         log: [], victory: false, defeat: false,
@@ -256,9 +259,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       get().addMessage('A dark presence fills the room... The Mad Wizard awaits!', 'danger');
     }
 
-    if (cell.hasEncounter && !get().combat.active) {
+    set(s => ({ stepsSinceEncounter: s.stepsSinceEncounter + 1 }));
+
+    if (cell.hasEncounter && !get().combat.active && get().stepsSinceEncounter >= 2) {
       dungeon.grid[next.y][next.x].hasEncounter = false;
       if (Math.random() < 0.6) {
+        set({ stepsSinceEncounter: 0 });
         get().startCombat();
       }
     }

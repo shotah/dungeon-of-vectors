@@ -43,12 +43,16 @@ export function performSpell(caster: Character, spell: Spell, targets: (Monster 
   const logs: string[] = [];
   caster.stats.mp -= spell.manaCost;
 
+  const levelScale = 1 + (caster.stats.level - 1) * 0.15;
+
   if (spell.damage) {
     for (const target of targets) {
       const isMonster = 'maxHp' in target && !('characterClass' in target);
       const tgt = isMonster ? (target as Monster) : (target as Character).stats;
       const def = isMonster ? (target as Monster).defense : getEffectiveDefense(target as Character);
-      const dmg = Math.max(1, spell.damage + Math.floor(caster.stats.level * 1.5) - def / 3);
+      const scaledBase = Math.floor(spell.damage * levelScale);
+      const atkBonus = Math.floor(caster.stats.attack * 0.5);
+      const dmg = Math.max(1, scaledBase + atkBonus - Math.floor(def / 3));
       tgt.hp = Math.max(0, tgt.hp - dmg);
       const name = isMonster ? (target as Monster).name : (target as Character).name;
       logs.push(`${caster.name} casts ${spell.name} on ${name} for ${dmg} damage!`);
@@ -59,7 +63,7 @@ export function performSpell(caster: Character, spell: Spell, targets: (Monster 
     for (const target of targets) {
       const char = target as Character;
       if (!char.alive) continue;
-      const heal = spell.healing + Math.floor(caster.stats.level * 2);
+      const heal = Math.floor(spell.healing * levelScale);
       char.stats.hp = Math.min(char.stats.maxHp, char.stats.hp + heal);
       logs.push(`${caster.name} casts ${spell.name} on ${char.name}, restoring ${heal} HP!`);
     }
