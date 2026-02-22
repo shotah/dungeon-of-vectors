@@ -136,7 +136,16 @@ export interface CombatEntity {
   speed: number;
 }
 
-export type CombatAction = 'attack' | 'defend' | 'magic' | 'item' | 'flee';
+export type CombatAction = 'attack' | 'defend' | 'magic' | 'ability' | 'item' | 'flee';
+
+export interface Ability {
+  id: string;
+  name: string;
+  description: string;
+  target: 'single_enemy';
+  learnedByClass: CharacterClass;
+  levelRequired: number;
+}
 
 export interface SaveSlot {
   id: number;

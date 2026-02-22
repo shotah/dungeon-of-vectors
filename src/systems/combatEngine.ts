@@ -1,4 +1,4 @@
-import type { Character, Monster, CombatEntity, Spell, Item } from '../types';
+import type { Character, Monster, CombatEntity, Spell, Item, Ability } from '../types';
 import { rollDice } from '../utils/random';
 
 export function buildTurnOrder(party: Character[], monsters: Monster[]): CombatEntity[] {
@@ -108,6 +108,61 @@ export function monsterAI(monster: Monster, party: Character[]): { targetIndex: 
     targetIndex,
     log: `${monster.name} attacks ${target.name} for ${dmg} damage!${target.stats.hp <= 0 ? ` ${target.name} falls!` : ''}`,
   };
+}
+
+export function performSteal(rogue: Character, monster: Monster): { gold: number; log: string } {
+  const speedEdge = (rogue.stats.speed - monster.speed) * 0.03;
+  const chance = Math.max(0.15, Math.min(0.85, 0.35 + speedEdge));
+  if (Math.random() < chance) {
+    const stolen = Math.max(1, Math.floor(monster.goldReward * (0.3 + Math.random() * 0.5)));
+    return { gold: stolen, log: `${rogue.name} steals ${stolen} gold from ${monster.name}!` };
+  }
+  return { gold: 0, log: `${rogue.name} fails to steal from ${monster.name}!` };
+}
+
+export function performAssassinate(rogue: Character, monster: Monster): { killed: boolean; damageTaken: number; damageDealt: number; log: string } {
+  const isBoss = monster.id === 'mad_wizard';
+  if (isBoss) {
+    const recoil = Math.max(1, Math.floor(monster.attack * 0.4));
+    rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
+    const nick = Math.max(1, Math.floor(rogue.stats.attack * 0.2));
+    monster.hp = Math.max(0, monster.hp - nick);
+    return {
+      killed: false, damageTaken: recoil, damageDealt: nick,
+      log: `${rogue.name} attempts to assassinate ${monster.name}... The Wizard shrugs it off! ${rogue.name} takes ${recoil} recoil damage, nicks for ${nick}.`,
+    };
+  }
+
+  const chance = Math.max(0.05, Math.min(0.25, 0.12 + rogue.stats.level * 0.02));
+  if (Math.random() < chance) {
+    monster.hp = 0;
+    return { killed: true, damageTaken: 0, damageDealt: monster.maxHp, log: `${rogue.name} strikes a vital point! ${monster.name} is slain instantly!` };
+  }
+
+  const recoil = Math.max(1, Math.floor(monster.attack * 0.3));
+  rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
+  const nick = Math.max(1, Math.floor(rogue.stats.attack * 0.3));
+  monster.hp = Math.max(0, monster.hp - nick);
+  return {
+    killed: false, damageTaken: recoil, damageDealt: nick,
+    log: `${rogue.name} fails to assassinate ${monster.name}! Takes ${recoil} recoil damage, deals ${nick}.`,
+  };
+}
+
+export function performAbility(ability: Ability, rogue: Character, monster: Monster): { logs: string[]; goldStolen: number } {
+  const logs: string[] = [];
+  let goldStolen = 0;
+  if (ability.id === 'steal') {
+    const result = performSteal(rogue, monster);
+    logs.push(result.log);
+    goldStolen = result.gold;
+  } else if (ability.id === 'assassinate') {
+    const result = performAssassinate(rogue, monster);
+    logs.push(result.log);
+    if (rogue.stats.hp <= 0) rogue.alive = false;
+    if (result.killed) logs.push(`${monster.name} is defeated!`);
+  }
+  return { logs, goldStolen };
 }
 
 export function canFlee(partySpeed: number, monsterSpeed: number): boolean {

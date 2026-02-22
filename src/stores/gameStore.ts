@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import type {
-  Character, Item, Direction, Position, DungeonFloor,
+  Character, Item, Direction, Position, DungeonFloor, DungeonCell,
   Monster, CombatEntity, GameScreen, MessageLogEntry,
-  GameSave, SaveSlot, CombatAction, Spell,
+  GameSave, SaveSlot, CombatAction, Spell, Ability,
 } from '../types';
 import { CLASS_DEFINITIONS, calculateXpToNext } from '../data/classes';
 import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
@@ -12,7 +12,7 @@ import { getBuyPrice, getSellPrice } from '../data/trader';
 import { getItem } from '../data/items';
 import {
   buildTurnOrder, getEffectiveAttack,
-  performAttack, performSpell, monsterAI, canFlee,
+  performAttack, performSpell, performAbility, monsterAI, canFlee,
   calculateXpReward, calculateGoldReward, applyItem,
 } from '../systems/combatEngine';
 import { turnLeft, turnRight, moveInDirection } from '../utils/direction';
@@ -51,6 +51,7 @@ interface GameState {
     defeat: boolean;
     selectedAction: CombatAction | null;
     selectedSpell: Spell | null;
+    selectedAbility: Ability | null;
     selectedItem: Item | null;
     targetingMode: 'enemy' | 'ally' | 'dead_ally' | null;
     barrierActive: boolean;
@@ -84,6 +85,7 @@ interface GameState {
   selectAction: (action: CombatAction) => void;
   cancelAction: () => void;
   selectSpell: (spell: Spell) => void;
+  selectAbility: (ability: Ability) => void;
   selectCombatItem: (item: Item) => void;
   executePlayerAction: (targetIndex: number) => void;
   advanceTurn: () => void;
@@ -136,6 +138,31 @@ function exploreAround(map: boolean[][], x: number, y: number, width: number, he
   }
 }
 
+const LOS_DEPTH = 6;
+const FACING_DELTA: Record<Direction, { dx: number; dy: number }> = {
+  N: { dx: 0, dy: -1 }, S: { dx: 0, dy: 1 },
+  E: { dx: 1, dy: 0 }, W: { dx: -1, dy: 0 },
+};
+
+function exploreLOS(map: boolean[][], x: number, y: number, facing: Direction, grid: DungeonCell[][], width: number, height: number) {
+  const { dx, dy } = FACING_DELTA[facing];
+  const ldx = -dy, ldy = dx;
+
+  for (let d = 1; d <= LOS_DEPTH; d++) {
+    const fx = x + dx * d;
+    const fy = y + dy * d;
+    if (fx < 0 || fx >= width || fy < 0 || fy >= height) break;
+    map[fy][fx] = true;
+
+    const lx = fx + ldx, ly = fy + ldy;
+    if (lx >= 0 && lx < width && ly >= 0 && ly < height) map[ly][lx] = true;
+    const rx = fx - ldx, ry = fy - ldy;
+    if (rx >= 0 && rx < width && ry >= 0 && ry < height) map[ry][rx] = true;
+
+    if (grid[fy][fx].type === 'wall') break;
+  }
+}
+
 function createExploredMap(width: number, height: number): boolean[][] {
   return Array.from({ length: height }, () => Array(width).fill(false));
 }
@@ -159,7 +186,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   combat: {
     active: false, monsters: [], turnOrder: [], currentTurn: 0,
     log: [], victory: false, defeat: false,
-    selectedAction: null, selectedSpell: null, selectedItem: null,
+    selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
     targetingMode: null, barrierActive: false,
     defendingIds: new Set(), animating: false,
   },
@@ -179,6 +206,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const startPos = getStartPosition(dungeon);
     const explored = { 1: createExploredMap(dungeon.width, dungeon.height) };
     exploreAround(explored[1], startPos.x, startPos.y, dungeon.width, dungeon.height);
+    exploreLOS(explored[1], startPos.x, startPos.y, 'N', dungeon.grid, dungeon.width, dungeon.height);
 
     set({
       party: partySetup.map((p, i) => createCharacter(p.name, p.characterClass, i)),
@@ -199,7 +227,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       combat: {
         active: false, monsters: [], turnOrder: [], currentTurn: 0,
         log: [], victory: false, defeat: false,
-        selectedAction: null, selectedSpell: null, selectedItem: null,
+        selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
@@ -230,6 +258,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const map = exploredMaps[currentFloor] || createExploredMap(dungeon.width, dungeon.height);
     exploreAround(map, next.x, next.y, dungeon.width, dungeon.height);
+    exploreLOS(map, next.x, next.y, facing, dungeon.grid, dungeon.width, dungeon.height);
     set({ position: next, exploredMaps: { ...exploredMaps, [currentFloor]: map } });
     playFootstep();
 
@@ -276,15 +305,44 @@ export const useGameStore = create<GameState>((set, get) => ({
     const backDir = facing === 'N' ? 'S' : facing === 'S' ? 'N' : facing === 'E' ? 'W' : 'E';
     const next = moveInDirection(position, backDir);
     if (next.x < 0 || next.x >= dungeon.width || next.y < 0 || next.y >= dungeon.height) return;
-    if (dungeon.grid[next.y][next.x].type === 'wall') return;
+    const cell = dungeon.grid[next.y][next.x];
+    if (cell.type === 'wall') return;
 
     const map = exploredMaps[currentFloor] || createExploredMap(dungeon.width, dungeon.height);
     exploreAround(map, next.x, next.y, dungeon.width, dungeon.height);
+    exploreLOS(map, next.x, next.y, facing, dungeon.grid, dungeon.width, dungeon.height);
     set({ position: next, exploredMaps: { ...exploredMaps, [currentFloor]: map } });
+    playFootstep();
+
+    set(s => ({ stepsSinceEncounter: s.stepsSinceEncounter + 1 }));
+
+    if (cell.hasEncounter && !get().combat.active && get().stepsSinceEncounter >= 2) {
+      dungeon.grid[next.y][next.x].hasEncounter = false;
+      if (Math.random() < 0.6) {
+        set({ stepsSinceEncounter: 0 });
+        get().startCombat();
+      }
+    }
   },
 
-  turnPlayerLeft: () => set(state => ({ facing: turnLeft(state.facing) })),
-  turnPlayerRight: () => set(state => ({ facing: turnRight(state.facing) })),
+  turnPlayerLeft: () => {
+    const newFacing = turnLeft(get().facing);
+    set({ facing: newFacing });
+    const { position, dungeon, exploredMaps, currentFloor } = get();
+    if (!dungeon) return;
+    const map = exploredMaps[currentFloor] || createExploredMap(dungeon.width, dungeon.height);
+    exploreLOS(map, position.x, position.y, newFacing, dungeon.grid, dungeon.width, dungeon.height);
+    set({ exploredMaps: { ...exploredMaps, [currentFloor]: map } });
+  },
+  turnPlayerRight: () => {
+    const newFacing = turnRight(get().facing);
+    set({ facing: newFacing });
+    const { position, dungeon, exploredMaps, currentFloor } = get();
+    if (!dungeon) return;
+    const map = exploredMaps[currentFloor] || createExploredMap(dungeon.width, dungeon.height);
+    exploreLOS(map, position.x, position.y, newFacing, dungeon.grid, dungeon.width, dungeon.height);
+    set({ exploredMaps: { ...exploredMaps, [currentFloor]: map } });
+  },
 
   goDownstairs: () => {
     const { dungeon, position, dungeonSeed, currentFloor, maxFloor, exploredMaps } = get();
@@ -296,6 +354,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const startPos = getStartPosition(newDungeon);
     const map = exploredMaps[nextFloor] || createExploredMap(newDungeon.width, newDungeon.height);
     exploreAround(map, startPos.x, startPos.y, newDungeon.width, newDungeon.height);
+    exploreLOS(map, startPos.x, startPos.y, 'N', newDungeon.grid, newDungeon.width, newDungeon.height);
 
     set({
       currentFloor: nextFloor,
@@ -389,7 +448,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         active: true, monsters, turnOrder, currentTurn: -1,
         log: [`Encountered: ${monsterNames}!`],
         victory: false, defeat: false,
-        selectedAction: null, selectedSpell: null, selectedItem: null,
+        selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
@@ -411,7 +470,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         active: true, monsters: [boss], turnOrder, currentTurn: -1,
         log: ['The Mad Wizard cackles with fury!'],
         victory: false, defeat: false,
-        selectedAction: null, selectedSpell: null, selectedItem: null,
+        selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
@@ -465,6 +524,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    if (action === 'ability') {
+      set({ combat: { ...combat, selectedAction: 'ability', targetingMode: null, selectedAbility: null } });
+      return;
+    }
+
     if (action === 'item') {
       set({ combat: { ...combat, selectedAction: 'item', targetingMode: null, selectedItem: null } });
       return;
@@ -475,13 +539,19 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   cancelAction: () => {
     const { combat } = get();
-    set({ combat: { ...combat, selectedAction: null, selectedSpell: null, selectedItem: null, targetingMode: null } });
+    set({ combat: { ...combat, selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null, targetingMode: null } });
   },
 
   selectSpell: (spell) => {
     const targetingMode = spell.target.includes('enemy') ? 'enemy' as const : 'ally' as const;
     set(state => ({
       combat: { ...state.combat, selectedSpell: spell, targetingMode },
+    }));
+  },
+
+  selectAbility: (ability) => {
+    set(state => ({
+      combat: { ...state.combat, selectedAbility: ability, targetingMode: 'enemy' as const },
     }));
   },
 
@@ -503,6 +573,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newMonsters = combat.monsters.map(m => ({ ...m }));
     const newParty = party.map(c => ({ ...c, stats: { ...c.stats }, equipment: { ...c.equipment } }));
     const newInventory = [...inventory];
+    let stolenGold = 0;
 
     if (combat.selectedAction === 'attack') {
       const monster = newMonsters[targetIndex];
@@ -537,6 +608,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         newLog.push(...logs);
         if (spell.id === 'barrier') {
           set(s => ({ combat: { ...s.combat, barrierActive: true } }));
+        }
+      }
+    } else if (combat.selectedAction === 'ability' && combat.selectedAbility) {
+      const ability = combat.selectedAbility;
+      const charRef = newParty.find(c => c.id === char.id)!;
+      const monster = newMonsters[targetIndex];
+      if (monster && monster.hp > 0) {
+        const result = performAbility(ability, charRef, monster);
+        newLog.push(...result.logs);
+        if (result.goldStolen > 0) {
+          stolenGold += result.goldStolen;
         }
       }
     } else if (combat.selectedAction === 'item' && combat.selectedItem) {
@@ -580,10 +662,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({
         party: newParty,
         inventory: [...newInventory, ...loot],
-        gold: state.gold + goldReward,
+        gold: state.gold + goldReward + stolenGold,
         combat: {
           ...combat, monsters: newMonsters, log: newLog,
-          victory: true, selectedAction: null, selectedSpell: null,
+          victory: true, selectedAction: null, selectedSpell: null, selectedAbility: null,
           selectedItem: null, targetingMode: null,
         },
       });
@@ -600,9 +682,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       party: newParty,
       inventory: newInventory,
+      gold: state.gold + stolenGold,
       combat: {
         ...combat, monsters: newMonsters, log: newLog,
-        currentTurn: combat.currentTurn, selectedAction: null, selectedSpell: null,
+        currentTurn: combat.currentTurn, selectedAction: null, selectedSpell: null, selectedAbility: null,
         selectedItem: null, targetingMode: null,
       },
     });
@@ -680,7 +763,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       combat: {
         active: false, monsters: [], turnOrder: [], currentTurn: 0,
         log: [], victory: false, defeat: false,
-        selectedAction: null, selectedSpell: null, selectedItem: null,
+        selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
@@ -856,7 +939,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       combat: {
         active: false, monsters: [], turnOrder: [], currentTurn: 0,
         log: [], victory: false, defeat: false,
-        selectedAction: null, selectedSpell: null, selectedItem: null,
+        selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },

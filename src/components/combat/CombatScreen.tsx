@@ -4,6 +4,7 @@ import { MonsterSprite } from '../svg/monsters';
 import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
 import { getSpellsForClass } from '../../data/spells';
+import { getAbilitiesForClass } from '../../data/abilities';
 
 export default function CombatScreen() {
   const combat = useGameStore(s => s.combat);
@@ -12,6 +13,7 @@ export default function CombatScreen() {
   const storeSelectAction = useGameStore(s => s.selectAction);
   const storeCancelAction = useGameStore(s => s.cancelAction);
   const storeSelectSpell = useGameStore(s => s.selectSpell);
+  const storeSelectAbility = useGameStore(s => s.selectAbility);
   const storeSelectCombatItem = useGameStore(s => s.selectCombatItem);
   const executePlayerAction = useGameStore(s => s.executePlayerAction);
   const endCombat = useGameStore(s => s.endCombat);
@@ -34,6 +36,10 @@ export default function CombatScreen() {
     () => currentChar ? getSpellsForClass(currentChar.characterClass, currentChar.stats.level) : [],
     [currentChar],
   );
+  const abilities = useMemo(
+    () => currentChar ? getAbilitiesForClass(currentChar.characterClass, currentChar.stats.level) : [],
+    [currentChar],
+  );
 
   const handleSelectAction = useCallback((action: Parameters<typeof storeSelectAction>[0]) => {
     setSelectedTarget(0);
@@ -44,6 +50,11 @@ export default function CombatScreen() {
     setSelectedTarget(0);
     storeSelectSpell(spell);
   }, [storeSelectSpell]);
+
+  const handleSelectAbility = useCallback((ability: Parameters<typeof storeSelectAbility>[0]) => {
+    setSelectedTarget(0);
+    storeSelectAbility(ability);
+  }, [storeSelectAbility]);
 
   const handleSelectCombatItem = useCallback((item: Parameters<typeof storeSelectCombatItem>[0]) => {
     setSelectedTarget(0);
@@ -113,6 +124,15 @@ export default function CombatScreen() {
       return;
     }
 
+    if (combat.selectedAction === 'ability' && !combat.selectedAbility) {
+      if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleCancel(); return; }
+      if (key >= '1' && key <= '9') {
+        const idx = parseInt(key) - 1;
+        if (idx < abilities.length) handleSelectAbility(abilities[idx]);
+      }
+      return;
+    }
+
     if (combat.selectedAction === 'item' && !combat.selectedItem) {
       if (key === 'Escape' || key === 's' || key === 'ArrowDown') { handleCancel(); return; }
       if (key >= '1' && key <= '9') {
@@ -126,14 +146,17 @@ export default function CombatScreen() {
       switch (key) {
         case '1': case 'w': case 'ArrowUp': handleSelectAction('attack'); break;
         case '2': handleSelectAction('defend'); break;
-        case '3': if (spells.length > 0) handleSelectAction('magic'); break;
+        case '3':
+          if (spells.length > 0) handleSelectAction('magic');
+          else if (abilities.length > 0) handleSelectAction('ability');
+          break;
         case '4': if (consumables.length > 0) handleSelectAction('item'); break;
         case '5': handleSelectAction('flee'); break;
       }
     }
   }, [combat, isPlayerTurn, currentChar, aliveMonsters, aliveParty, deadParty, selectedTarget,
-      spells, consumables, endCombat, executePlayerAction, handleSelectAction, handleCancel,
-      handleSelectSpell, handleSelectCombatItem]);
+      spells, abilities, consumables, endCombat, executePlayerAction, handleSelectAction, handleCancel,
+      handleSelectSpell, handleSelectAbility, handleSelectCombatItem]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleCombatKey);
@@ -288,6 +311,7 @@ export default function CombatScreen() {
                 {currentChar.name}'s turn
                 {combat.targetingMode && ' - Select target'}
                 {combat.selectedAction === 'magic' && !combat.selectedSpell && !combat.targetingMode && ' - Select spell'}
+                {combat.selectedAction === 'ability' && !combat.selectedAbility && !combat.targetingMode && ' - Select ability'}
                 {combat.selectedAction === 'item' && !combat.selectedItem && !combat.targetingMode && ' - Select item'}
               </div>
               {!combat.selectedAction && (
@@ -296,6 +320,9 @@ export default function CombatScreen() {
                   <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">[2] Defend</Button>
                   {spells.length > 0 && (
                     <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">[3] Magic</Button>
+                  )}
+                  {spells.length === 0 && abilities.length > 0 && (
+                    <Button onClick={() => handleSelectAction('ability')} size="sm" variant="gold">[3] Ability</Button>
                   )}
                   {consumables.length > 0 && (
                     <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary">[4] Item</Button>
@@ -319,6 +346,21 @@ export default function CombatScreen() {
                   <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
                 </div>
               )}
+              {combat.selectedAction === 'ability' && !combat.selectedAbility && (
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {abilities.map((ability, ai) => (
+                    <Button
+                      key={ability.id}
+                      onClick={() => handleSelectAbility(ability)}
+                      size="sm"
+                      variant="gold"
+                    >
+                      [{ai + 1}] {ability.name}
+                    </Button>
+                  ))}
+                  <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
+                </div>
+              )}
               {combat.selectedAction === 'item' && !combat.selectedItem && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {consumables.map((item, ci) => (
@@ -331,7 +373,9 @@ export default function CombatScreen() {
               )}
               {combat.targetingMode === 'enemy' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                  <Button onClick={() => executePlayerAction(aliveMonsters[selectedTarget]?.i ?? 0)} size="sm">Attack</Button>
+                  <Button onClick={() => executePlayerAction(aliveMonsters[selectedTarget]?.i ?? 0)} size="sm">
+                    {combat.selectedAbility ? combat.selectedAbility.name : 'Attack'}
+                  </Button>
                   <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
                   <span style={{ fontSize: 11, color: '#888' }}>A/D to select, W/Enter to confirm</span>
                 </div>
