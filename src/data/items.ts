@@ -123,7 +123,7 @@ export const ITEMS: Record<string, Item> = {
   // Keys
   dungeon_key: {
     id: 'dungeon_key', name: 'Dungeon Key', type: 'key', icon: 'key',
-    description: 'Opens a locked door.', value: 0,
+    description: 'Opens a locked door.', value: 25,
   },
 };
 

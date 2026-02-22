@@ -15,6 +15,7 @@ const LichSVG = lazy(() => import('./LichSVG'));
 const DemonSVG = lazy(() => import('./DemonSVG'));
 const DeathKnightSVG = lazy(() => import('./DeathKnightSVG'));
 const ElderDragonSVG = lazy(() => import('./ElderDragonSVG'));
+const MadWizardSVG = lazy(() => import('./MadWizardSVG'));
 
 const MONSTER_MAP: Record<string, React.LazyExoticComponent<React.ComponentType<{ size?: number }>>> = {
   SkeletonSVG,
@@ -32,6 +33,7 @@ const MONSTER_MAP: Record<string, React.LazyExoticComponent<React.ComponentType<
   DemonSVG,
   DeathKnightSVG,
   ElderDragonSVG,
+  MadWizardSVG,
 };
 
 export function MonsterSprite({ name, size = 120 }: { name: string; size?: number }) {

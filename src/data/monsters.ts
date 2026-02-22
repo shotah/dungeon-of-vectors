@@ -78,6 +78,11 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
     xpReward: 1000, goldReward: 500, minFloor: 8, svgComponent: 'ElderDragonSVG',
     lootTable: [{ itemId: 'elder_dragon_shield', chance: 0.15 }, { itemId: 'dragon_sword', chance: 0.25 }, { itemId: 'health_potion_large', chance: 0.4 }, { itemId: 'revive_potion', chance: 0.12 }],
   },
+  {
+    id: 'mad_wizard', name: 'The Mad Wizard', maxHp: 400, attack: 45, defense: 20, speed: 14,
+    xpReward: 2000, goldReward: 1000, minFloor: 999, svgComponent: 'MadWizardSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'revive_potion', chance: 0.5 }],
+  },
 ];
 
 export function getMonstersForFloor(floor: number): MonsterTemplate[] {

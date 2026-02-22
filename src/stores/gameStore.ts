@@ -6,7 +6,7 @@ import type {
 } from '../types';
 import { CLASS_DEFINITIONS, calculateXpToNext } from '../data/classes';
 import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
-import { getMonstersForFloor, spawnMonster } from '../data/monsters';
+import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
 import { getBuyPrice, getSellPrice } from '../data/trader';
 import { getItem } from '../data/items';
@@ -66,16 +66,20 @@ interface GameState {
   playtime: number;
   startTime: number;
 
+  maxFloor: number;
+
   // Actions
-  initNewGame: (partySetup: { name: string; characterClass: string }[]) => void;
+  initNewGame: (partySetup: { name: string; characterClass: string }[], maxFloor: number) => void;
   moveForward: () => void;
   moveBackward: () => void;
   turnPlayerLeft: () => void;
   turnPlayerRight: () => void;
   goDownstairs: () => void;
+  interact: () => void;
 
   // Combat actions
   startCombat: () => void;
+  startBossFight: () => void;
   selectAction: (action: CombatAction) => void;
   cancelAction: () => void;
   selectSpell: (spell: Spell) => void;
@@ -145,6 +149,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dungeonSeed: 0,
   currentFloor: 1,
+  maxFloor: 10,
   dungeon: null,
   position: { x: 0, y: 0 },
   facing: 'N',
@@ -166,9 +171,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   playtime: 0,
   startTime: Date.now(),
 
-  initNewGame: (partySetup) => {
+  initNewGame: (partySetup, maxFloor) => {
     const seed = generateSeed();
-    const dungeon = generateDungeon(seed, 1);
+    const dungeon = generateDungeon(seed, 1, maxFloor);
     const startPos = getStartPosition(dungeon);
     const explored = { 1: createExploredMap(dungeon.width, dungeon.height) };
     exploreAround(explored[1], startPos.x, startPos.y, dungeon.width, dungeon.height);
@@ -179,6 +184,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gold: 0,
       dungeonSeed: seed,
       currentFloor: 1,
+      maxFloor,
       dungeon,
       position: startPos,
       facing: 'N',
@@ -246,6 +252,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       get().addMessage('You see stairs leading deeper...', 'info');
     }
 
+    if (cell.type === 'boss') {
+      get().addMessage('A dark presence fills the room... The Mad Wizard awaits!', 'danger');
+    }
+
     if (cell.hasEncounter && !get().combat.active) {
       dungeon.grid[next.y][next.x].hasEncounter = false;
       if (Math.random() < 0.6) {
@@ -271,12 +281,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   turnPlayerRight: () => set(state => ({ facing: turnRight(state.facing) })),
 
   goDownstairs: () => {
-    const { dungeon, position, dungeonSeed, currentFloor, exploredMaps } = get();
+    const { dungeon, position, dungeonSeed, currentFloor, maxFloor, exploredMaps } = get();
     if (!dungeon) return;
     if (dungeon.grid[position.y][position.x].type !== 'stairs_down') return;
 
     const nextFloor = currentFloor + 1;
-    const newDungeon = generateDungeon(dungeonSeed, nextFloor);
+    const newDungeon = generateDungeon(dungeonSeed, nextFloor, maxFloor);
     const startPos = getStartPosition(newDungeon);
     const map = exploredMaps[nextFloor] || createExploredMap(newDungeon.width, newDungeon.height);
     exploreAround(map, startPos.x, startPos.y, newDungeon.width, newDungeon.height);
@@ -292,6 +302,64 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Auto-save
     get().saveGame(0);
+  },
+
+  interact: () => {
+    const { position, facing, dungeon, currentFloor, showTrader, combat, resting } = get();
+    if (!dungeon || combat.active || showTrader || resting) return;
+
+    const ahead = moveInDirection(position, facing);
+    if (ahead.x >= 0 && ahead.x < dungeon.width && ahead.y >= 0 && ahead.y < dungeon.height) {
+      const cell = dungeon.grid[ahead.y][ahead.x];
+
+      if (cell.type === 'chest') {
+        const loot = getChestLoot(currentFloor);
+        const chestGold = getChestGold(currentFloor);
+        dungeon.grid[ahead.y][ahead.x].type = 'floor';
+        set(state => ({
+          inventory: [...state.inventory, ...loot],
+          gold: state.gold + chestGold,
+        }));
+        const lootNames = loot.map(i => i.name).join(', ');
+        get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
+        playChest();
+        return;
+      }
+
+      if (cell.type === 'trader') {
+        get().addMessage('A wandering trader beckons you over...', 'info');
+        set({ showTrader: true });
+        return;
+      }
+    }
+
+    if (dungeon.grid[ahead.y]?.[ahead.x]?.type === 'boss') {
+      get().startBossFight();
+      return;
+    }
+
+    const currentCell = dungeon.grid[position.y]?.[position.x];
+    if (currentCell?.type === 'boss') {
+      get().startBossFight();
+      return;
+    }
+    if (currentCell?.type === 'stairs_down') {
+      get().goDownstairs();
+    } else if (currentCell?.type === 'trader') {
+      get().addMessage('A wandering trader beckons you over...', 'info');
+      set({ showTrader: true });
+    } else if (currentCell?.type === 'chest') {
+      const loot = getChestLoot(currentFloor);
+      const chestGold = getChestGold(currentFloor);
+      dungeon.grid[position.y][position.x].type = 'floor';
+      set(state => ({
+        inventory: [...state.inventory, ...loot],
+        gold: state.gold + chestGold,
+      }));
+      const lootNames = loot.map(i => i.name).join(', ');
+      get().addMessage(`Found a treasure chest! Got ${chestGold} gold${loot.length ? ` and ${lootNames}` : ''}.`, 'loot');
+      playChest();
+    }
   },
 
   startCombat: () => {
@@ -321,6 +389,28 @@ export const useGameStore = create<GameState>((set, get) => ({
       },
     });
     get().addMessage(`Ambushed by ${monsterNames}!`, 'combat');
+    playCombatStart();
+    setTimeout(() => get().advanceTurn(), 300);
+  },
+
+  startBossFight: () => {
+    const { currentFloor, party } = get();
+    const template = getMonsterTemplate('mad_wizard');
+    if (!template) return;
+    const boss = spawnMonster(template, currentFloor);
+    const turnOrder = buildTurnOrder(party, [boss]);
+
+    set({
+      combat: {
+        active: true, monsters: [boss], turnOrder, currentTurn: -1,
+        log: ['The Mad Wizard cackles with fury!'],
+        victory: false, defeat: false,
+        selectedAction: null, selectedSpell: null, selectedItem: null,
+        targetingMode: null, barrierActive: false,
+        defendingIds: new Set(), animating: false,
+      },
+    });
+    get().addMessage('The Mad Wizard attacks!', 'combat');
     playCombatStart();
     setTimeout(() => get().advanceTurn(), 300);
   },
@@ -494,6 +584,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       playVictory();
       if (loot.length > 0) {
         get().addMessage(`Loot: ${loot.map(i => i.name).join(', ')}`, 'loot');
+      }
+      if (newMonsters.some(m => m.id === 'mad_wizard')) {
+        setTimeout(() => set({ screen: 'victory' }), 2000);
       }
       return;
     }
@@ -717,6 +810,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gold: state.gold,
       dungeonSeed: state.dungeonSeed,
       currentFloor: state.currentFloor,
+      maxFloor: state.maxFloor,
       position: state.position,
       facing: state.facing,
       exploredMaps: state.exploredMaps,
@@ -736,13 +830,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     const save: GameSave = saves[slotId];
     if (!save) return;
 
-    const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor);
+    const loadedMaxFloor = save.maxFloor || 10;
+    const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor, loadedMaxFloor);
     set({
       party: save.party,
       inventory: save.inventory,
       gold: save.gold,
       dungeonSeed: save.dungeonSeed,
       currentFloor: save.currentFloor,
+      maxFloor: loadedMaxFloor,
       dungeon,
       position: save.position,
       facing: save.facing,

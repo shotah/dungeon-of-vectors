@@ -2,9 +2,11 @@ import { lazy, Suspense } from 'react';
 import { useGameStore } from './stores/gameStore';
 import MainMenu from './components/screens/MainMenu';
 
+const IntroScreen = lazy(() => import('./components/screens/IntroScreen'));
 const CharacterCreation = lazy(() => import('./components/screens/CharacterCreation'));
 const GameScreen = lazy(() => import('./components/screens/GameScreen'));
 const GameOver = lazy(() => import('./components/screens/GameOver'));
+const VictoryScreen = lazy(() => import('./components/screens/VictoryScreen'));
 
 function LoadingScreen() {
   return (
@@ -24,9 +26,11 @@ export default function App() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       {screen === 'main_menu' && <MainMenu />}
+      {screen === 'intro' && <IntroScreen />}
       {screen === 'character_creation' && <CharacterCreation />}
       {screen === 'game' && <GameScreen />}
       {screen === 'game_over' && <GameOver />}
+      {screen === 'victory' && <VictoryScreen />}
     </Suspense>
   );
 }

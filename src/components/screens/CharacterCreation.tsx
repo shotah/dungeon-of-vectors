@@ -24,6 +24,7 @@ const DEFAULT_NAMES: Record<CharacterClass, string> = {
 export default function CharacterCreation() {
   const [selected, setSelected] = useState<CharacterClass[]>(['warrior', 'mage', 'rogue', 'cleric']);
   const [names, setNames] = useState<Record<CharacterClass, string>>({ ...DEFAULT_NAMES });
+  const [maxFloor, setMaxFloor] = useState(10);
   const initNewGame = useGameStore(s => s.initNewGame);
   const setScreen = useGameStore(s => s.setScreen);
 
@@ -127,9 +128,25 @@ export default function CharacterCreation() {
         })}
       </div>
 
+      <div style={{
+        display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontSize: 12, color: '#888' }}>Dungeon Length:</span>
+        <Button
+          size="sm"
+          variant={maxFloor === 5 ? 'gold' : 'secondary'}
+          onClick={() => setMaxFloor(5)}
+        >Short (5 floors)</Button>
+        <Button
+          size="sm"
+          variant={maxFloor === 10 ? 'gold' : 'secondary'}
+          onClick={() => setMaxFloor(10)}
+        >Standard (10 floors)</Button>
+      </div>
+
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <Button onClick={() => setScreen('main_menu')} variant="secondary">Back</Button>
-        <Button onClick={() => initNewGame(partySlots)} disabled={!canStart} size="lg">
+        <Button onClick={() => setScreen('intro')} variant="secondary">Back</Button>
+        <Button onClick={() => initNewGame(partySlots, maxFloor)} disabled={!canStart} size="lg">
           Enter the Dungeon
         </Button>
         {selected.length < MAX_PARTY_SIZE && (

@@ -331,6 +331,7 @@ export default function CombatScreen() {
               )}
               {combat.targetingMode === 'enemy' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Button onClick={() => executePlayerAction(aliveMonsters[selectedTarget]?.i ?? 0)} size="sm">Attack</Button>
                   <Button onClick={handleCancel} size="sm" variant="secondary">[Esc] Back</Button>
                   <span style={{ fontSize: 11, color: '#888' }}>A/D to select, W/Enter to confirm</span>
                 </div>

@@ -135,7 +135,7 @@ function placeEncounters(grid: DungeonCell[][], rng: SeededRandom, encounterRate
   }
 }
 
-export function generateDungeon(seed: number, floor: number): DungeonFloor {
+export function generateDungeon(seed: number, floor: number, maxFloor?: number): DungeonFloor {
   const rng = new SeededRandom(seed + floor * 7919);
   const baseSize = 20;
   const width = baseSize + floor * 4;
@@ -179,9 +179,10 @@ export function generateDungeon(seed: number, floor: number): DungeonFloor {
   const startPos = roomCenter(rooms[0]);
   grid[startPos.y][startPos.x].type = 'start';
 
-  // Place stairs down in last room
+  // Place stairs down (or boss on final floor) in last room
   const stairsPos = roomCenter(rooms[rooms.length - 1]);
-  grid[stairsPos.y][stairsPos.x].type = 'stairs_down';
+  const isFinalFloor = maxFloor != null && floor >= maxFloor;
+  grid[stairsPos.y][stairsPos.x].type = isFinalFloor ? 'boss' : 'stairs_down';
 
   // Place doors only in proper doorways (floor tile flanked by walls on two opposite sides)
   for (const room of rooms) {

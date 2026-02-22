@@ -1,0 +1,86 @@
+export default function MadWizardSVG({ size = 120 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <defs>
+        <radialGradient id="madWizardOrb" cx="50%" cy="50%">
+          <stop offset="0%" stopColor="#ff3333" />
+          <stop offset="100%" stopColor="#880000" />
+        </radialGradient>
+        <radialGradient id="madWizardAura" cx="50%" cy="50%">
+          <stop offset="0%" stopColor="#ff4400" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#ff0000" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      {/* Aura */}
+      <circle cx="60" cy="60" r="55" fill="url(#madWizardAura)">
+        <animate attributeName="r" values="55;58;55" dur="2s" repeatCount="indefinite" />
+      </circle>
+      {/* Robe */}
+      <path d="M32 48 L25 112 L95 112 L88 48 Z" fill="#2a0a0a" stroke="#550000" strokeWidth="1.5" />
+      <path d="M25 112 L20 117 L100 117 L95 112 Z" fill="#1a0505" />
+      {/* Robe folds */}
+      <line x1="48" y1="58" x2="42" y2="112" stroke="#3a0a0a" strokeWidth="1" />
+      <line x1="72" y1="58" x2="78" y2="112" stroke="#3a0a0a" strokeWidth="1" />
+      <line x1="60" y1="52" x2="60" y2="112" stroke="#3a0a0a" strokeWidth="0.5" />
+      {/* Robe trim - arcane symbols */}
+      <path d="M35 100 Q45 95 55 100 Q65 95 75 100 Q85 95 90 100" fill="none" stroke="#cc3300" strokeWidth="0.8" opacity="0.6">
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite" />
+      </path>
+      {/* Pointed hat */}
+      <path d="M38 48 L60 5 L82 48 Q70 52 60 50 Q50 52 38 48 Z" fill="#2a0a0a" stroke="#550000" strokeWidth="1.5" />
+      <path d="M55 5 L60 2 L65 5" fill="#cc3300" stroke="none" />
+      {/* Hat band */}
+      <path d="M38 48 Q60 42 82 48" fill="none" stroke="#cc3300" strokeWidth="2" />
+      {/* Face */}
+      <ellipse cx="60" cy="42" rx="13" ry="11" fill="#c4956a" />
+      {/* Wild eyebrows */}
+      <path d="M48 35 L53 33 L56 36" fill="none" stroke="#555" strokeWidth="1.5" />
+      <path d="M72 35 L67 33 L64 36" fill="none" stroke="#555" strokeWidth="1.5" />
+      {/* Mad glowing eyes */}
+      <ellipse cx="53" cy="39" rx="3.5" ry="3" fill="#ffcc00" />
+      <ellipse cx="67" cy="39" rx="3.5" ry="3" fill="#ffcc00" />
+      <circle cx="53" cy="39" r="1.8" fill="#ff0000">
+        <animate attributeName="r" values="1.8;2.2;1.8" dur="0.8s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="67" cy="39" r="1.8" fill="#ff0000">
+        <animate attributeName="r" values="1.8;2.2;1.8" dur="0.8s" repeatCount="indefinite" />
+      </circle>
+      {/* Crooked nose */}
+      <path d="M60 41 L58 46 L61 47" fill="#b8856a" stroke="#8a6a4a" strokeWidth="0.5" />
+      {/* Grimacing mouth */}
+      <path d="M53 50 Q57 53 60 50 Q63 53 67 50" fill="none" stroke="#5a3a2a" strokeWidth="1.2" />
+      {/* Beard */}
+      <path d="M50 48 Q48 60 52 70" fill="none" stroke="#888" strokeWidth="1.5" />
+      <path d="M55 50 Q54 62 56 72" fill="none" stroke="#999" strokeWidth="1" />
+      <path d="M65 50 Q66 62 64 72" fill="none" stroke="#999" strokeWidth="1" />
+      <path d="M70 48 Q72 60 68 70" fill="none" stroke="#888" strokeWidth="1.5" />
+      {/* Arms */}
+      <path d="M35 56 L18 78 L15 73" fill="none" stroke="#2a0a0a" strokeWidth="4" strokeLinecap="round" />
+      <path d="M85 56 L100 72" fill="none" stroke="#2a0a0a" strokeWidth="4" strokeLinecap="round" />
+      {/* Staff with red orb */}
+      <line x1="15" y1="15" x2="15" y2="105" stroke="#3a2a1a" strokeWidth="3" />
+      <circle cx="15" cy="13" r="9" fill="url(#madWizardOrb)" stroke="#ff3300" strokeWidth="1">
+        <animate attributeName="r" values="9;10;9" dur="1.5s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="15" cy="13" r="4" fill="#ff6644" opacity="0.6">
+        <animate attributeName="opacity" values="0.6;1;0.6" dur="0.7s" repeatCount="indefinite" />
+      </circle>
+      {/* Casting hand energy */}
+      <circle cx="100" cy="70" r="5" fill="#ff3300" opacity="0.5">
+        <animate attributeName="r" values="5;7;5" dur="1s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.5;0.8;0.5" dur="1s" repeatCount="indefinite" />
+      </circle>
+      {/* Crackling energy particles */}
+      <circle cx="98" cy="62" r="2" fill="#ff6600" opacity="0.8">
+        <animate attributeName="cy" values="62;55;62" dur="1.2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="105" cy="66" r="1.5" fill="#ffaa00" opacity="0.6">
+        <animate attributeName="cy" values="66;58;66" dur="1.6s" repeatCount="indefinite" />
+      </circle>
+      <circle cx="93" cy="64" r="1" fill="#ff4400" opacity="0.7">
+        <animate attributeName="cy" values="64;56;64" dur="0.9s" repeatCount="indefinite" />
+      </circle>
+    </svg>
+  );
+}

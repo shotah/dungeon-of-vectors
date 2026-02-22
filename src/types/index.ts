@@ -1,6 +1,6 @@
 export type Direction = 'N' | 'S' | 'E' | 'W';
 
-export type CellType = 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'start' | 'trader';
+export type CellType = 'wall' | 'floor' | 'door' | 'stairs_up' | 'stairs_down' | 'chest' | 'start' | 'trader' | 'boss';
 
 export interface DungeonCell {
   type: CellType;
@@ -148,11 +148,12 @@ export interface GameSave {
   position: Position;
   facing: Direction;
   exploredMaps: Record<number, boolean[][]>;
+  maxFloor: number;
   playtime: number;
   timestamp: number;
 }
 
-export type GameScreen = 'main_menu' | 'character_creation' | 'game' | 'game_over';
+export type GameScreen = 'main_menu' | 'character_creation' | 'game' | 'game_over' | 'intro' | 'victory';
 
 export interface MessageLogEntry {
   text: string;
