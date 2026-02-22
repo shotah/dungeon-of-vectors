@@ -293,7 +293,7 @@ export default function CombatScreen() {
                   }}>{targetIdx + 1}</div>
                 )}
                 <div style={{ fontSize: 11, color: char.alive ? '#aaccff' : '#aa4444' }}>
-                  {char.name} <span style={{ color: '#667' }}>Lv{char.stats.level}</span>
+                  {char.name} <span style={{ color: '#667', textTransform: 'capitalize' }}>{char.characterClass}</span>
                   {!char.alive && <span style={{ color: '#aa4444' }}> (Dead)</span>}
                 </div>
                 <StatBar value={char.stats.hp} max={char.stats.maxHp} height={6} color={char.alive ? '#44aa44' : '#aa4444'} showText={false} />

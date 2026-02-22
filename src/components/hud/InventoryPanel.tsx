@@ -200,6 +200,9 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
                   {char.name}
                 </div>
                 <StatBar value={char.stats.hp} max={char.stats.maxHp} height={4} color={char.alive ? '#44aa44' : '#aa4444'} showText={false} />
+                {char.stats.maxMp > 0 && (
+                  <StatBar value={char.stats.mp} max={char.stats.maxMp} height={3} color="#4488cc" showText={false} />
+                )}
               </div>
             ))}
           </div>
