@@ -65,27 +65,31 @@ export function buildWallInstructions(
   for (let d = maxDepth; d >= 0; d--) {
     if (isBlockingSide(left[d])) {
       const hasFarCrossL = d < maxDepth && !isBlockingSide(left[d + 1]);
-      if (!hasFarCrossL) {
-        instructions.push({ type: 'left', depth: d });
+      if (hasFarCrossL) {
+        instructions.push({ type: 'left_cross', depth: d + 1 });
       }
       if (d > 0 && !isBlockingSide(left[d - 1])) {
         instructions.push({ type: 'left_cross', depth: d });
       }
-      if (hasFarCrossL) {
-        instructions.push({ type: 'left_cross', depth: d + 1 });
-      }
+    }
+    // Strip at depth d shows the cell at the far end of the segment (left[d+1]); skip at d===0 when left[0] is floor so passage visible
+    const leftStripAtD = d < maxDepth ? isBlockingSide(left[d + 1]) : isBlockingSide(left[d]);
+    if (leftStripAtD && (d > 0 || isBlockingSide(left[0]))) {
+      instructions.push({ type: 'left', depth: d });
     }
     if (isBlockingSide(right[d])) {
       const hasFarCrossR = d < maxDepth && !isBlockingSide(right[d + 1]);
-      if (!hasFarCrossR) {
-        instructions.push({ type: 'right', depth: d });
+      if (hasFarCrossR) {
+        instructions.push({ type: 'right_cross', depth: d + 1 });
       }
       if (d > 0 && !isBlockingSide(right[d - 1])) {
         instructions.push({ type: 'right_cross', depth: d });
       }
-      if (hasFarCrossR) {
-        instructions.push({ type: 'right_cross', depth: d + 1 });
-      }
+    }
+    // Strip at depth d shows the cell at the far end of the segment (right[d+1]); skip at d===0 when right[0] is floor so passage visible
+    const rightStripAtD = d < maxDepth ? isBlockingSide(right[d + 1]) : isBlockingSide(right[d]);
+    if (rightStripAtD && (d > 0 || isBlockingSide(right[0]))) {
+      instructions.push({ type: 'right', depth: d });
     }
 
     if (nearestBlocker >= 0 && d > nearestBlocker) continue;

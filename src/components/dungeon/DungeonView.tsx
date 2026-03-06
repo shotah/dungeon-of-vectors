@@ -66,6 +66,11 @@ export default function DungeonView() {
 
   const prompt = getPrompt(currentCell?.type ?? null, facingType);
 
+  const cellLabel = (c: string) => (c === 'wall' ? 'W' : c === 'floor' ? 'F' : c === 'door' ? 'D' : (c?.slice(0, 1) ?? '?').toUpperCase());
+  const debugSlice = (arr: typeof forward, n: number) => arr.slice(0, n).map(cellLabel).join(',');
+  const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
+  const rightCoords = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? `(${position.x + rd.x},${position.y + rd.y})` : `(${position.x + fd.x * i + rd.x},${position.y + fd.y * i + rd.y})`)).join(' ');
+
   return (
     <svg
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
@@ -84,6 +89,14 @@ export default function DungeonView() {
       <text x={VIEW_WIDTH / 2} y={20} textAnchor="middle" fill="#667" fontSize="12" fontFamily="monospace">
         Facing {facing === 'N' ? 'North' : facing === 'S' ? 'South' : facing === 'E' ? 'East' : 'West'}
       </text>
+      {import.meta.env.DEV && (
+        <g fontSize="10" fontFamily="monospace" fill="#446">
+          <text x={8} y={VIEW_HEIGHT - 44}>F: {debugSlice(forward, 6)}</text>
+          <text x={8} y={VIEW_HEIGHT - 32}>L: {debugSlice(left, 6)}</text>
+          <text x={8} y={VIEW_HEIGHT - 20}>R: {debugSlice(right, 6)} (d0=right edge)</text>
+          <text x={8} y={VIEW_HEIGHT - 8}>R cells: {rightCoords(6)}</text>
+        </g>
+      )}
     </svg>
   );
 }

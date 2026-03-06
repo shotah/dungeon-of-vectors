@@ -8,13 +8,19 @@ export interface DepthConfig {
   bottom: number;
 }
 
+// More depth tiers = more side-wall panels left/right so the view fills the window
 export const DEPTHS: DepthConfig[] = [
   { left: 0, right: VIEW_WIDTH, top: 0, bottom: VIEW_HEIGHT },
   { left: 100, right: VIEW_WIDTH - 100, top: 50, bottom: VIEW_HEIGHT - 50 },
+  { left: 140, right: VIEW_WIDTH - 140, top: 70, bottom: VIEW_HEIGHT - 70 },
   { left: 180, right: VIEW_WIDTH - 180, top: 90, bottom: VIEW_HEIGHT - 90 },
+  { left: 210, right: VIEW_WIDTH - 210, top: 105, bottom: VIEW_HEIGHT - 105 },
   { left: 240, right: VIEW_WIDTH - 240, top: 120, bottom: VIEW_HEIGHT - 120 },
+  { left: 252, right: VIEW_WIDTH - 252, top: 126, bottom: VIEW_HEIGHT - 126 },
   { left: 264, right: VIEW_WIDTH - 264, top: 132, bottom: VIEW_HEIGHT - 132 },
+  { left: 271, right: VIEW_WIDTH - 271, top: 136, bottom: VIEW_HEIGHT - 136 },
   { left: 278, right: VIEW_WIDTH - 278, top: 140, bottom: VIEW_HEIGHT - 140 },
+  { left: 283, right: VIEW_WIDTH - 283, top: 143, bottom: VIEW_HEIGHT - 143 },
   { left: 288, right: VIEW_WIDTH - 288, top: 146, bottom: VIEW_HEIGHT - 146 },
 ];
 
