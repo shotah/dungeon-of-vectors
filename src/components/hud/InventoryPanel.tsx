@@ -6,6 +6,7 @@ import { ItemIcon, GoldIcon } from '../svg/items/ItemIcons';
 import { CharacterPortrait } from '../svg/characters';
 import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
+import { getBaseDefense } from '../../systems/combatEngine';
 
 export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const party = useGameStore(s => s.party);
@@ -105,7 +106,7 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
               )}
             </div>
             <div style={{ fontSize: 9, color: '#667', marginTop: 2 }}>
-              ATK:{char.stats.attack} DEF:{char.stats.defense} SPD:{char.stats.speed}
+              VIT:{char.stats.vitality} INT:{char.stats.intelligence} STR:{char.stats.strength} DEF:{getBaseDefense(char)} AGI:{char.stats.agility}
             </div>
             <div style={{ fontSize: 9, color: '#667' }}>
               {char.equipment.weapon && `W: ${char.equipment.weapon.name}`}

@@ -133,7 +133,7 @@ export default function CharacterCreation() {
               )}
 
               <div style={{ fontSize: 9, color: '#667' }}>
-                HP:{cls.baseStats.maxHp} MP:{cls.baseStats.maxMp} ATK:{cls.baseStats.attack} DEF:{cls.baseStats.defense} SPD:{cls.baseStats.speed}
+                HP:{cls.baseStats.maxHp} MP:{cls.baseStats.maxMp} VIT:{cls.baseStats.vitality} INT:{cls.baseStats.intelligence} STR:{cls.baseStats.strength} DEF:{Math.floor((cls.baseStats.strength + cls.baseStats.agility) / 2)} AGI:{cls.baseStats.agility}
               </div>
             </div>
           );

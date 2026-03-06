@@ -4,7 +4,7 @@ import { rollDice } from '../utils/random';
 export function buildTurnOrder(party: Character[], monsters: Monster[]): CombatEntity[] {
   const entities: CombatEntity[] = [
     ...party.filter(c => c.alive).map(c => ({
-      id: c.id, name: c.name, isMonster: false, speed: c.stats.speed + (c.equipment.accessory?.speed || 0),
+      id: c.id, name: c.name, isMonster: false, speed: c.stats.agility + (c.equipment.accessory?.speed || 0),
     })),
     ...monsters.map((m, i) => ({
       id: `monster_${i}`, name: m.name, isMonster: true, speed: m.speed,
@@ -19,15 +19,21 @@ export function calculateDamage(attackerAtk: number, defenderDef: number): numbe
   return base + rollDice(variance) - Math.floor(variance / 2);
 }
 
+const AGILITY_CLASSES = new Set(['rogue', 'ranger']);
+
 export function getEffectiveAttack(char: Character): number {
-  let atk = char.stats.attack;
+  let atk = AGILITY_CLASSES.has(char.characterClass) ? char.stats.agility : char.stats.strength;
   if (char.equipment.weapon?.attack) atk += char.equipment.weapon.attack;
   if (char.equipment.accessory?.attack) atk += char.equipment.accessory.attack;
   return atk;
 }
 
+export function getBaseDefense(char: Character): number {
+  return Math.floor((char.stats.strength + char.stats.agility) / 2);
+}
+
 export function getEffectiveDefense(char: Character): number {
-  let def = char.stats.defense;
+  let def = getBaseDefense(char);
   if (char.equipment.armor?.defense) def += char.equipment.armor.defense;
   if (char.equipment.accessory?.defense) def += char.equipment.accessory.defense;
   return def;
@@ -51,8 +57,8 @@ export function performSpell(caster: Character, spell: Spell, targets: (Monster 
       const tgt = isMonster ? (target as Monster) : (target as Character).stats;
       const def = isMonster ? (target as Monster).defense : getEffectiveDefense(target as Character);
       const scaledBase = Math.floor(spell.damage * levelScale);
-      const atkBonus = Math.floor(caster.stats.attack * 0.5);
-      const dmg = Math.max(1, scaledBase + atkBonus - Math.floor(def / 3));
+      const intBonus = Math.floor(caster.stats.intelligence * 0.8);
+      const dmg = Math.max(1, scaledBase + intBonus - Math.floor(def / 3));
       tgt.hp = Math.max(0, tgt.hp - dmg);
       const name = isMonster ? (target as Monster).name : (target as Character).name;
       logs.push(`${caster.name} casts ${spell.name} on ${name} for ${dmg} damage!`);
@@ -63,7 +69,8 @@ export function performSpell(caster: Character, spell: Spell, targets: (Monster 
     for (const target of targets) {
       const char = target as Character;
       if (!char.alive) continue;
-      const heal = Math.floor(spell.healing * levelScale);
+      const intBonus = Math.floor(caster.stats.intelligence * 0.5);
+      const heal = Math.floor(spell.healing * levelScale) + intBonus;
       char.stats.hp = Math.min(char.stats.maxHp, char.stats.hp + heal);
       logs.push(`${caster.name} casts ${spell.name} on ${char.name}, restoring ${heal} HP!`);
     }
@@ -111,7 +118,7 @@ export function monsterAI(monster: Monster, party: Character[]): { targetIndex: 
 }
 
 export function performSteal(rogue: Character, monster: Monster): { gold: number; log: string } {
-  const speedEdge = (rogue.stats.speed - monster.speed) * 0.03;
+  const speedEdge = (rogue.stats.agility - monster.speed) * 0.03;
   const chance = Math.max(0.15, Math.min(0.85, 0.35 + speedEdge));
   if (Math.random() < chance) {
     const stolen = Math.max(1, Math.floor(monster.goldReward * (0.3 + Math.random() * 0.5)));
@@ -125,7 +132,7 @@ export function performAssassinate(rogue: Character, monster: Monster): { killed
   if (isBoss) {
     const recoil = Math.max(1, Math.floor(monster.attack * 0.4));
     rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
-    const nick = Math.max(1, Math.floor(rogue.stats.attack * 0.2));
+    const nick = Math.max(1, Math.floor(rogue.stats.agility * 0.2));
     monster.hp = Math.max(0, monster.hp - nick);
     return {
       killed: false, damageTaken: recoil, damageDealt: nick,
@@ -141,7 +148,7 @@ export function performAssassinate(rogue: Character, monster: Monster): { killed
 
   const recoil = Math.max(1, Math.floor(monster.attack * 0.3));
   rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
-  const nick = Math.max(1, Math.floor(rogue.stats.attack * 0.3));
+  const nick = Math.max(1, Math.floor(rogue.stats.agility * 0.3));
   monster.hp = Math.max(0, monster.hp - nick);
   return {
     killed: false, damageTaken: recoil, damageDealt: nick,

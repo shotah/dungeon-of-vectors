@@ -40,9 +40,10 @@ export interface CharacterStats {
   hp: number;
   maxMp: number;
   mp: number;
-  attack: number;
-  defense: number;
-  speed: number;
+  strength: number;
+  agility: number;
+  vitality: number;
+  intelligence: number;
   level: number;
   xp: number;
   xpToNext: number;
@@ -171,7 +172,13 @@ export interface GameSave {
   gridChanges?: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
 }
 
-export type GameScreen = 'main_menu' | 'character_creation' | 'game' | 'game_over' | 'intro' | 'victory';
+export interface PendingLevelUp {
+  characterId: string;
+  newLevel: number;
+  pointsToSpend: number;
+}
+
+export type GameScreen = 'main_menu' | 'character_creation' | 'game' | 'game_over' | 'intro' | 'victory' | 'level_up';
 
 export interface MessageLogEntry {
   text: string;

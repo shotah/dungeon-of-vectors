@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
 import { getSpellsForClass } from '../../data/spells';
 import { getAbilitiesForClass } from '../../data/abilities';
+import { getEffectiveAttack } from '../../systems/combatEngine';
 
 export default function CombatScreen() {
   const combat = useGameStore(s => s.combat);
@@ -327,7 +328,7 @@ export default function CombatScreen() {
               </div>
               {!combat.selectedAction && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Button onClick={() => handleSelectAction('attack')} size="sm">Attack</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm">Attack {currentChar ? getEffectiveAttack(currentChar) : ''}dmg</Button>
                   <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">Defend</Button>
                   {spells.length > 0 && (
                     <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">Magic</Button>
@@ -350,7 +351,7 @@ export default function CombatScreen() {
                       variant="gold"
                       disabled={currentChar.stats.mp < spell.manaCost}
                     >
-                      {spell.name} ({spell.manaCost}MP)
+                      {spell.name}{spell.damage ? ` ${spell.damage}dmg` : ''}{spell.healing ? ` ${spell.healing}hp` : ''} ({spell.manaCost}MP)
                     </Button>
                   ))}
                   <div style={{ flex: 1 }} />
@@ -388,7 +389,7 @@ export default function CombatScreen() {
               {combat.targetingMode === 'enemy' && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                   <Button onClick={() => executePlayerAction(aliveMonsters[selectedTarget]?.i ?? 0)} size="sm">
-                    {combat.selectedAbility ? combat.selectedAbility.name : 'Attack'}
+                    {combat.selectedAbility ? combat.selectedAbility.name : 'Select'}
                   </Button>
                   {!isMobile && <span style={{ fontSize: 11, color: '#888' }}>A/D to select, Enter to confirm</span>}
                   <div style={{ flex: 1 }} />

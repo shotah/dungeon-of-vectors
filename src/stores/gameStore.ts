@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import type {
   Character, Item, Direction, Position, DungeonFloor, DungeonCell,
   Monster, CombatEntity, GameScreen, MessageLogEntry,
-  GameSave, SaveSlot, CombatAction, Spell, Ability,
+  GameSave, SaveSlot, CombatAction, Spell, Ability, PendingLevelUp,
 } from '../types';
-import { CLASS_DEFINITIONS, calculateXpToNext } from '../data/classes';
+import { CLASS_DEFINITIONS, calculateXpToNext, HP_PER_VIT, MP_PER_INT, STR_PER_PT, AGI_PER_PT } from '../data/classes';
 import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
 import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
@@ -92,6 +92,11 @@ interface GameState {
   advanceTurn: () => void;
   processMonsterTurns: () => void;
   endCombat: () => void;
+
+  // Level-up
+  pendingLevelUps: PendingLevelUp[];
+  bossDefeated: boolean;
+  applyLevelUp: (characterId: string, allocations: { strength: number; agility: number; vitality: number; intelligence: number }) => void;
 
   // Inventory
   equipItem: (characterId: string, item: Item) => void;
@@ -201,6 +206,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     defendingIds: new Set(), animating: false,
   },
 
+  pendingLevelUps: [],
+  bossDefeated: false,
+
   messages: [],
   addMessage: (text, type = 'info') => set(state => ({
     messages: [...state.messages.slice(-50), { text, type, timestamp: Date.now() }],
@@ -230,6 +238,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       facing: 'N',
       exploredMaps: explored,
       gridChanges: {},
+      pendingLevelUps: [],
+      bossDefeated: false,
       messages: [{ text: 'You descend into the dungeon...', type: 'system', timestamp: Date.now() }],
       screen: 'game',
       playtime: 0,
@@ -500,7 +510,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   selectAction: (action) => {
     const { combat, party } = get();
     if (action === 'flee') {
-      const avgPartySpeed = party.filter(c => c.alive).reduce((s, c) => s + c.stats.speed, 0) / party.filter(c => c.alive).length;
+      const avgPartySpeed = party.filter(c => c.alive).reduce((s, c) => s + c.stats.agility, 0) / party.filter(c => c.alive).length;
       const avgMonsterSpeed = combat.monsters.filter(m => m.hp > 0).reduce((s, m) => s + m.speed, 0) / combat.monsters.filter(m => m.hp > 0).length;
       if (canFlee(avgPartySpeed, avgMonsterSpeed)) {
         set({
@@ -656,6 +666,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const loot = rollLoot(newMonsters);
       newLog.push(`Victory! Gained ${xp} XP and ${goldReward} gold!`);
 
+      const newPendingLevelUps: PendingLevelUp[] = [];
       newParty.forEach(c => {
         if (!c.alive) return;
         c.stats.xp += xp;
@@ -663,14 +674,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           c.stats.xp -= c.stats.xpToNext;
           c.stats.level++;
           c.stats.xpToNext = calculateXpToNext(c.stats.level);
-          const growth = CLASS_DEFINITIONS[c.characterClass].growthRates;
-          c.stats.maxHp += growth.hp;
-          c.stats.hp = c.stats.maxHp;
-          c.stats.maxMp += growth.mp;
-          c.stats.mp = c.stats.maxMp;
-          c.stats.attack += growth.attack;
-          c.stats.defense += growth.defense;
-          c.stats.speed += growth.speed;
+          const cls = CLASS_DEFINITIONS[c.characterClass];
+          newPendingLevelUps.push({
+            characterId: c.id,
+            newLevel: c.stats.level,
+            pointsToSpend: cls.pointsPerLevel,
+          });
           newLog.push(`${c.name} leveled up to level ${c.stats.level}!`);
           playLevelUp();
         }
@@ -680,6 +689,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         party: newParty,
         inventory: [...newInventory, ...loot],
         gold: state.gold + goldReward + stolenGold,
+        pendingLevelUps: [...state.pendingLevelUps, ...newPendingLevelUps],
         combat: {
           ...combat, monsters: newMonsters, log: newLog,
           victory: true, selectedAction: null, selectedSpell: null, selectedAbility: null,
@@ -691,7 +701,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         get().addMessage(`Loot: ${loot.map(i => i.name).join(', ')}`, 'loot');
       }
       if (newMonsters.some(m => m.id === 'mad_wizard')) {
-        setTimeout(() => set({ screen: 'victory' }), 2000);
+        set({ bossDefeated: true });
       }
       return;
     }
@@ -776,7 +786,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   endCombat: () => {
-    set(state => ({
+    const state = get();
+    set({
       combat: {
         active: false, monsters: [], turnOrder: [], currentTurn: 0,
         log: [], victory: false, defeat: false,
@@ -784,8 +795,48 @@ export const useGameStore = create<GameState>((set, get) => ({
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
-      messages: state.messages,
-    }));
+    });
+    if (state.pendingLevelUps.length > 0) {
+      set({ screen: 'level_up' });
+    } else if (state.bossDefeated) {
+      set({ screen: 'victory' });
+    }
+  },
+
+  applyLevelUp: (characterId, allocations) => {
+    set(state => {
+      const newParty = state.party.map(c => {
+        if (c.id !== characterId) return c;
+        const hpGain = allocations.vitality * HP_PER_VIT;
+        const mpGain = allocations.intelligence * MP_PER_INT;
+        return {
+          ...c,
+          stats: {
+            ...c.stats,
+            strength: c.stats.strength + allocations.strength * STR_PER_PT,
+            agility: c.stats.agility + allocations.agility * AGI_PER_PT,
+            vitality: c.stats.vitality + allocations.vitality,
+            intelligence: c.stats.intelligence + allocations.intelligence,
+            maxHp: c.stats.maxHp + hpGain,
+            hp: c.stats.maxHp + hpGain,
+            maxMp: c.stats.maxMp + mpGain,
+            mp: c.stats.maxMp + mpGain,
+          },
+        };
+      });
+      const remaining = state.pendingLevelUps.slice(1);
+      let nextScreen: GameScreen = 'game';
+      if (remaining.length > 0) {
+        nextScreen = 'level_up';
+      } else if (state.bossDefeated) {
+        nextScreen = 'victory';
+      }
+      return {
+        party: newParty,
+        pendingLevelUps: remaining,
+        screen: nextScreen,
+      };
+    });
   },
 
   equipItem: (characterId, item) => {
@@ -955,6 +1006,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       position: save.position,
       facing: save.facing,
       exploredMaps: save.exploredMaps,
+      pendingLevelUps: [],
+      bossDefeated: false,
       playtime: save.playtime,
       startTime: Date.now(),
       screen: 'game',

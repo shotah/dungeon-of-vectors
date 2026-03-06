@@ -7,6 +7,7 @@ const CharacterCreation = lazy(() => import('./components/screens/CharacterCreat
 const GameScreen = lazy(() => import('./components/screens/GameScreen'));
 const GameOver = lazy(() => import('./components/screens/GameOver'));
 const VictoryScreen = lazy(() => import('./components/screens/VictoryScreen'));
+const LevelUpScreen = lazy(() => import('./components/screens/LevelUpScreen'));
 
 function LoadingScreen() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
       {screen === 'game' && <GameScreen />}
       {screen === 'game_over' && <GameOver />}
       {screen === 'victory' && <VictoryScreen />}
+      {screen === 'level_up' && <LevelUpScreen />}
     </Suspense>
   );
 }
