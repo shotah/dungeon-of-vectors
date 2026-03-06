@@ -6,7 +6,7 @@ export const ABILITIES: Ability[] = [
     target: 'single_enemy', learnedByClass: 'rogue', levelRequired: 1,
   },
   {
-    id: 'assassinate', name: 'Assassinate', description: 'Gamble for an instant kill. Fail and you take damage.',
+    id: 'assassinate', name: 'Assassinate', description: 'Gamble for an instant kill. Fail and you take damage. Stronger with a dagger equipped.',
     target: 'single_enemy', learnedByClass: 'rogue', levelRequired: 2,
   },
 ];

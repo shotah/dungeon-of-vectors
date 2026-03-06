@@ -6,7 +6,41 @@ import { ItemIcon, GoldIcon } from '../svg/items/ItemIcons';
 import { CharacterPortrait } from '../svg/characters';
 import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
-import { getBaseDefense } from '../../systems/combatEngine';
+import { getBaseDefense, getEffectiveAttack, getEffectiveDefense } from '../../systems/combatEngine';
+import { canEquipItem, getAllowedClassesLabel } from '../../data/items';
+
+function getAttackWithEquipment(char: Character, overrides: { weapon?: Item | null; armor?: Item | null; accessory?: Item | null }): number {
+  const c: Character = {
+    ...char,
+    equipment: {
+      weapon: overrides.weapon !== undefined ? overrides.weapon ?? undefined : char.equipment.weapon,
+      armor: overrides.armor !== undefined ? overrides.armor ?? undefined : char.equipment.armor,
+      accessory: overrides.accessory !== undefined ? overrides.accessory ?? undefined : char.equipment.accessory,
+    },
+  };
+  return getEffectiveAttack(c);
+}
+
+function getDefenseWithEquipment(char: Character, overrides: { weapon?: Item | null; armor?: Item | null; accessory?: Item | null }): number {
+  const c: Character = {
+    ...char,
+    equipment: {
+      weapon: overrides.weapon !== undefined ? overrides.weapon ?? undefined : char.equipment.weapon,
+      armor: overrides.armor !== undefined ? overrides.armor ?? undefined : char.equipment.armor,
+      accessory: overrides.accessory !== undefined ? overrides.accessory ?? undefined : char.equipment.accessory,
+    },
+  };
+  return getEffectiveDefense(c);
+}
+
+function getItemStatNote(item: Item): string | null {
+  if (item.type !== 'weapon' && item.type !== 'armor' && item.type !== 'accessory') return null;
+  const parts: string[] = [];
+  if (item.attack != null && item.attack !== 0) parts.push(`${item.attack > 0 ? '+' : ''}${item.attack} ATK`);
+  if (item.defense != null && item.defense !== 0) parts.push(`${item.defense > 0 ? '+' : ''}${item.defense} DEF`);
+  if (item.speed != null && item.speed !== 0) parts.push(`${item.speed > 0 ? '+' : ''}${item.speed} SPD`);
+  return parts.length ? parts.join(' · ') : null;
+}
 
 export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const party = useGameStore(s => s.party);
@@ -15,9 +49,48 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const equipItem = useGameStore(s => s.equipItem);
   const applyItemOutOfCombat = useGameStore(s => s.applyItemOutOfCombat);
   const restWithTent = useGameStore(s => s.restWithTent);
-  const [selectedChar, setSelectedChar] = useState<Character | null>(null);
+  const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const isMobile = useIsMobile();
+  const selectedChar = selectedCharId ? party.find(c => c.id === selectedCharId) ?? null : null;
+
+  const itemImpactLines = (): string[] => {
+    if (!selectedItem || !selectedChar) return [];
+    const lines: string[] = [];
+    if (selectedItem.type === 'weapon') {
+      const atkNow = getEffectiveAttack(selectedChar);
+      const atkWith = getAttackWithEquipment(selectedChar, { weapon: selectedItem });
+      const diff = atkWith - atkNow;
+      const currentLabel = selectedChar.equipment.weapon ? selectedChar.equipment.weapon.name : 'No weapon';
+      lines.push(`ATK ${atkNow} → ${atkWith} (${diff >= 0 ? '+' : ''}${diff}) vs ${currentLabel}`);
+    }
+    if (selectedItem.type === 'armor') {
+      const defNow = getEffectiveDefense(selectedChar);
+      const defWith = getDefenseWithEquipment(selectedChar, { armor: selectedItem });
+      const diff = defWith - defNow;
+      const currentLabel = selectedChar.equipment.armor ? selectedChar.equipment.armor.name : 'No armor';
+      lines.push(`DEF ${defNow} → ${defWith} (${diff >= 0 ? '+' : ''}${diff}) vs ${currentLabel}`);
+    }
+    if (selectedItem.type === 'accessory') {
+      const atkNow = getEffectiveAttack(selectedChar);
+      const atkWith = getAttackWithEquipment(selectedChar, { accessory: selectedItem });
+      const defNow = getEffectiveDefense(selectedChar);
+      const defWith = getDefenseWithEquipment(selectedChar, { accessory: selectedItem });
+      if (atkWith !== atkNow) lines.push(`ATK ${atkNow} → ${atkWith} (${atkWith - atkNow >= 0 ? '+' : ''}${atkWith - atkNow})`);
+      if (defWith !== defNow) lines.push(`DEF ${defNow} → ${defWith} (${defWith - defNow >= 0 ? '+' : ''}${defWith - defNow})`);
+      const spdNow = selectedChar.stats.agility + (selectedChar.equipment.accessory?.speed ?? 0);
+      const spdWith = selectedChar.stats.agility + (selectedItem.speed ?? 0);
+      if (spdWith !== spdNow) lines.push(`SPD ${spdNow} → ${spdWith} (${spdWith - spdNow >= 0 ? '+' : ''}${spdWith - spdNow})`);
+      const currentLabel = selectedChar.equipment.accessory ? selectedChar.equipment.accessory.name : 'No accessory';
+      if (lines.length) lines.push(`vs ${currentLabel}`);
+    }
+    if (selectedItem.type === 'consumable') {
+      if (selectedItem.healAmount) lines.push(`Heals ${selectedItem.healAmount} HP`);
+      if (selectedItem.manaAmount) lines.push(`Restores ${selectedItem.manaAmount} MP`);
+      if (selectedItem.reviveAmount) lines.push(`Revives with ${Math.round((selectedItem.reviveAmount ?? 0) * 100)}% HP`);
+    }
+    return lines;
+  };
 
   const actionArea = (
     <>
@@ -40,14 +113,28 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
           <div style={{ fontSize: 11, color: '#ddd', marginBottom: 6 }}>
             {selectedItem.name} → {selectedChar.name}
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
+          {itemImpactLines().length > 0 && (
+            <div style={{ fontSize: 11, color: '#aaccff', marginBottom: 6 }}>
+              {itemImpactLines().map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
             {(selectedItem.type === 'weapon' || selectedItem.type === 'armor' || selectedItem.type === 'accessory') && (
-              <Button size="sm" onClick={() => {
-                equipItem(selectedChar.id, selectedItem);
-                setSelectedItem(null);
-              }}>
-                Equip
-              </Button>
+              <>
+                <Button size="sm" disabled={!canEquipItem(selectedChar.characterClass, selectedItem)} onClick={() => {
+                  if (canEquipItem(selectedChar.characterClass, selectedItem)) {
+                    equipItem(selectedChar.id, selectedItem);
+                    setSelectedItem(null);
+                  }
+                }}>
+                  Equip
+                </Button>
+                {!canEquipItem(selectedChar.characterClass, selectedItem) && getAllowedClassesLabel(selectedItem) && (
+                  <span style={{ fontSize: 11, color: '#b88' }}>({getAllowedClassesLabel(selectedItem)} only)</span>
+                )}
+              </>
             )}
             {selectedItem.type === 'consumable' && (() => {
               const isRevive = !!selectedItem.reviveAmount;
@@ -69,9 +156,38 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
           <div style={{ fontSize: 11, color: '#888' }}>
             {selectedItem.name} selected — tap a character above to equip/use
           </div>
+          {(selectedItem.type === 'weapon' || selectedItem.type === 'armor' || selectedItem.type === 'accessory') && (
+            <div style={{ fontSize: 10, color: '#667', marginTop: 4 }}>Select a character to see stat impact</div>
+          )}
+          {selectedItem.type === 'consumable' && (
+            <div style={{ fontSize: 11, color: '#aaccff', marginTop: 4 }}>
+              {selectedItem.healAmount && `Heals ${selectedItem.healAmount} HP`}
+              {selectedItem.manaAmount && ` · Restores ${selectedItem.manaAmount} MP`}
+              {selectedItem.reviveAmount && ` · Revives with ${Math.round((selectedItem.reviveAmount ?? 0) * 100)}% HP`}
+            </div>
+          )}
         </div>
       )}
     </>
+  );
+
+  const selectedCharStatsBlock = selectedChar && (
+    <div style={{ padding: 8, background: '#1a1a2e', borderRadius: 4, border: '1px solid #3a3a5a', marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: '#aaccff', marginBottom: 6 }}>{selectedChar.name} — Stats</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 16px', fontSize: 11, color: '#ccc' }}>
+        <span>ATK <strong style={{ color: '#fff' }}>{getEffectiveAttack(selectedChar)}</strong></span>
+        <span>DEF <strong style={{ color: '#fff' }}>{getEffectiveDefense(selectedChar)}</strong></span>
+        <span>STR {selectedChar.stats.strength}</span>
+        <span>AGI {selectedChar.stats.agility}</span>
+        <span>VIT {selectedChar.stats.vitality}</span>
+        <span>INT {selectedChar.stats.intelligence}</span>
+      </div>
+      <div style={{ fontSize: 10, color: '#888', marginTop: 6 }}>
+        {selectedChar.equipment.weapon ? `Weapon: ${selectedChar.equipment.weapon.name}` : 'Weapon: —'}
+        {selectedChar.equipment.armor ? ` · Armor: ${selectedChar.equipment.armor.name}` : ' · Armor: —'}
+        {selectedChar.equipment.accessory ? ` · Accessory: ${selectedChar.equipment.accessory.name}` : ' · Accessory: —'}
+      </div>
+    </div>
   );
 
   const partySection = (
@@ -81,11 +197,11 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
         {party.map(char => (
           <div
             key={char.id}
-            onClick={() => setSelectedChar(char)}
+            onClick={() => setSelectedCharId(char.id)}
             style={{
               padding: 8, marginBottom: 4, borderRadius: 4, cursor: 'pointer',
-              background: selectedChar?.id === char.id ? '#2a3a5a' : '#1a1a2e',
-              border: `1px solid ${selectedChar?.id === char.id ? '#4a6aaa' : '#2a2a3a'}`,
+              background: selectedCharId === char.id ? '#2a3a5a' : '#1a1a2e',
+              border: `1px solid ${selectedCharId === char.id ? '#4a6aaa' : '#2a2a3a'}`,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -119,14 +235,17 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   );
 
   const itemsSection = (
-    <div style={{ flex: 1, minWidth: isMobile ? undefined : 200 }}>
-      <div style={{ fontSize: 13, color: '#aaccff', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ flex: 1, minWidth: isMobile ? undefined : 200, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ fontSize: 13, color: '#aaccff', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         {!isMobile && 'Items'}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
           <GoldIcon size={14} /> <span style={{ color: '#daa520', fontSize: 12 }}>{gold}</span>
         </span>
       </div>
-      <div style={{ maxHeight: isMobile ? 180 : 300, overflow: 'auto' }}>
+      <div style={{
+        overflow: 'auto',
+        ...(isMobile ? { flex: 1, minHeight: 0 } : { maxHeight: 300 }),
+      }}>
         {inventory.length === 0 && (
           <div style={{ color: '#555', fontSize: 11 }}>Empty</div>
         )}
@@ -145,6 +264,9 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 11, color: '#ddd' }}>{item.name}</div>
               <div style={{ fontSize: 9, color: '#888' }}>{item.description}</div>
+              {getItemStatNote(item) && (
+                <div style={{ fontSize: 9, color: '#aaccff', marginTop: 2 }}>{getItemStatNote(item)}</div>
+              )}
             </div>
           </div>
         ))}
@@ -188,16 +310,16 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
             {party.map(char => (
               <div
                 key={char.id}
-                onClick={() => setSelectedChar(char)}
+                onClick={() => setSelectedCharId(char.id)}
                 style={{
                   flex: 1, padding: '6px 4px', borderRadius: 4, cursor: 'pointer',
-                  background: selectedChar?.id === char.id ? '#2a3a5a' : '#1a1a2e',
-                  border: `1px solid ${selectedChar?.id === char.id ? '#4a6aaa' : '#2a2a3a'}`,
+                  background: selectedCharId === char.id ? '#2a3a5a' : '#1a1a2e',
+                  border: `1px solid ${selectedCharId === char.id ? '#4a6aaa' : '#2a2a3a'}`,
                   textAlign: 'center', opacity: char.alive ? 1 : 0.5,
                 }}
               >
                 <CharacterPortrait characterClass={char.characterClass} size={24} />
-                <div style={{ fontSize: 10, color: selectedChar?.id === char.id ? '#aaccff' : '#999', marginTop: 2 }}>
+                <div style={{ fontSize: 10, color: selectedCharId === char.id ? '#aaccff' : '#999', marginTop: 2 }}>
                   {char.name}
                 </div>
                 <StatBar value={char.stats.hp} max={char.stats.maxHp} height={4} color={char.alive ? '#44aa44' : '#aa4444'} showText={false} />
@@ -208,11 +330,14 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
             ))}
           </div>
 
+          {/* Selected character stats */}
+          {selectedCharStatsBlock}
+
           {/* Action area under party */}
           {actionArea}
 
-          {/* Items list */}
-          <div style={{ flex: 1, overflow: 'auto', padding: 8 }}>
+          {/* Items list - flex so it fills remaining height and scrolls */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: 8 }}>
             {itemsSection}
           </div>
         </div>
@@ -239,6 +364,7 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
         }}>
           Inventory & Equipment
         </div>
+        {selectedCharStatsBlock}
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           {partySection}
           {itemsSection}

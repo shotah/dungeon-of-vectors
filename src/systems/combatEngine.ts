@@ -1,5 +1,6 @@
 import type { Character, Monster, CombatEntity, Spell, Item, Ability } from '../types';
 import { rollDice } from '../utils/random';
+import { isDaggerWeapon } from '../data/items';
 
 export function buildTurnOrder(party: Character[], monsters: Monster[]): CombatEntity[] {
   const entities: CombatEntity[] = [
@@ -128,11 +129,14 @@ export function performSteal(rogue: Character, monster: Monster): { gold: number
 }
 
 export function performAssassinate(rogue: Character, monster: Monster): { killed: boolean; damageTaken: number; damageDealt: number; log: string } {
+  const withDagger = isDaggerWeapon(rogue.equipment.weapon);
   const isBoss = monster.id === 'mad_wizard';
   if (isBoss) {
-    const recoil = Math.max(1, Math.floor(monster.attack * 0.4));
+    const recoilMult = withDagger ? 0.3 : 0.4;
+    const recoil = Math.max(1, Math.floor(monster.attack * recoilMult));
     rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
-    const nick = Math.max(1, Math.floor(rogue.stats.agility * 0.2));
+    const nickMult = withDagger ? 0.35 : 0.2;
+    const nick = Math.max(1, Math.floor(rogue.stats.agility * nickMult));
     monster.hp = Math.max(0, monster.hp - nick);
     return {
       killed: false, damageTaken: recoil, damageDealt: nick,
@@ -140,15 +144,20 @@ export function performAssassinate(rogue: Character, monster: Monster): { killed
     };
   }
 
-  const chance = Math.max(0.05, Math.min(0.25, 0.12 + rogue.stats.level * 0.02));
+  const baseChance = 0.12 + rogue.stats.level * 0.02;
+  const daggerBonus = withDagger ? 0.06 : 0;
+  const chance = Math.max(0.05, Math.min(0.25, baseChance + daggerBonus));
   if (Math.random() < chance) {
     monster.hp = 0;
-    return { killed: true, damageTaken: 0, damageDealt: monster.maxHp, log: `${rogue.name} strikes a vital point! ${monster.name} is slain instantly!` };
+    const daggerNote = withDagger ? ' The dagger finds its mark!' : '';
+    return { killed: true, damageTaken: 0, damageDealt: monster.maxHp, log: `${rogue.name} strikes a vital point! ${monster.name} is slain instantly!${daggerNote}` };
   }
 
-  const recoil = Math.max(1, Math.floor(monster.attack * 0.3));
+  const recoilMult = withDagger ? 0.2 : 0.3;
+  const nickMult = withDagger ? 0.4 : 0.3;
+  const recoil = Math.max(1, Math.floor(monster.attack * recoilMult));
   rogue.stats.hp = Math.max(0, rogue.stats.hp - recoil);
-  const nick = Math.max(1, Math.floor(rogue.stats.agility * 0.3));
+  const nick = Math.max(1, Math.floor(rogue.stats.agility * nickMult));
   monster.hp = Math.max(0, monster.hp - nick);
   return {
     killed: false, damageTaken: recoil, damageDealt: nick,

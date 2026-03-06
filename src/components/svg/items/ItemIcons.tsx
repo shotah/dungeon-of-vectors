@@ -20,6 +20,30 @@ export function StaffIcon({ size = 24 }: { size?: number }) {
   );
 }
 
+export function MaceIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <rect x="10.5" y="8" width="3" height="14" fill="#5C4033" rx="0.5" />
+      <rect x="9" y="6" width="6" height="3" fill="#888" stroke="#666" strokeWidth="0.5" rx="0.5" />
+      <circle cx="12" cy="4" r="3" fill="#aaa" stroke="#888" strokeWidth="0.5" />
+      <circle cx="12" cy="4" r="1.5" fill="#ccc" />
+      <rect x="8" y="17" width="8" height="2" fill="#5C4033" rx="0.5" />
+    </svg>
+  );
+}
+
+export function BowIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <path d="M4 20 Q12 12 20 4" fill="none" stroke="#8B6914" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 4 Q12 12 20 20" fill="none" stroke="#8B6914" strokeWidth="2" strokeLinecap="round" />
+      <path d="M4 20 Q12 12 20 4" fill="none" stroke="#5C4033" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+      <circle cx="12" cy="12" r="1.5" fill="#654321" stroke="#5C4033" strokeWidth="0.5" />
+      <path d="M20 4 L22 6 L20 8" fill="none" stroke="#888" strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function ShieldIcon({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -133,6 +157,8 @@ export function GoldIcon({ size = 24 }: { size?: number }) {
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   sword: SwordIcon,
   staff: StaffIcon,
+  mace: MaceIcon,
+  bow: BowIcon,
   shield: ShieldIcon,
   armor: ArmorIcon,
   potion_red: PotionRedIcon,

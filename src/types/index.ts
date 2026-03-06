@@ -81,6 +81,8 @@ export interface Item {
   reviveAmount?: number;
   restAll?: boolean;
   value: number;
+  /** If set, only these classes can equip this item (weapon/armor/accessory). */
+  allowedClasses?: CharacterClass[];
 }
 
 export interface Spell {

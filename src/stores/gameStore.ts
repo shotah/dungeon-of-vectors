@@ -9,7 +9,7 @@ import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
 import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
 import { getBuyPrice, getSellPrice } from '../data/trader';
-import { getItem } from '../data/items';
+import { getItem, canEquipItem } from '../data/items';
 import {
   buildTurnOrder, getEffectiveAttack,
   performAttack, performSpell, performAbility, monsterAI, canFlee,
@@ -841,6 +841,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   equipItem: (characterId, item) => {
     set(state => {
+      const char = state.party.find(c => c.id === characterId);
+      if (!char || !canEquipItem(char.characterClass, item)) return state;
       const newParty = state.party.map(c => {
         if (c.id !== characterId) return c;
         const newEquip = { ...c.equipment };
