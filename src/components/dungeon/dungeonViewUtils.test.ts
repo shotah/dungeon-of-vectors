@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { CellType } from '../../types';
+import { DEPTHS } from '../svg/dungeon/dungeonConstants';
 import {
   getCellAt,
   isBlockingSide,
@@ -104,19 +105,19 @@ describe('getViewCells', () => {
   const W = 10, H = 10;
 
   describe('array shapes', () => {
-    it('forward has 6 elements (depths 0-5 = cells 1-6 ahead)', () => {
+    it('forward has viewDepth elements (depths 0 to viewDepth-1 = cells 1 to viewDepth ahead)', () => {
       const result = getViewCells(grid, 5, 5, 'N', W, H);
-      expect(result.forward).toHaveLength(6);
+      expect(result.forward).toHaveLength(DEPTHS.length - 1);
     });
 
-    it('left has 7 elements (depth 0 at player + depths 1-6 ahead)', () => {
+    it('left has viewDepth+1 elements (depth 0 at player + depths 1 to viewDepth ahead)', () => {
       const result = getViewCells(grid, 5, 5, 'N', W, H);
-      expect(result.left).toHaveLength(7);
+      expect(result.left).toHaveLength(DEPTHS.length);
     });
 
-    it('right has 7 elements (depth 0 at player + depths 1-6 ahead)', () => {
+    it('right has viewDepth+1 elements (depth 0 at player + depths 1 to viewDepth ahead)', () => {
       const result = getViewCells(grid, 5, 5, 'N', W, H);
-      expect(result.right).toHaveLength(7);
+      expect(result.right).toHaveLength(DEPTHS.length);
     });
   });
 
@@ -145,6 +146,32 @@ describe('getViewCells', () => {
 
     it('right[1] is east of 1-ahead (6,4)', () => {
       expect(result.right[1]).toBe(getCellAt(grid, 6, 4, W, H));
+    });
+  });
+
+  describe('facing West: passage to the right (minimap should match 3D)', () => {
+    // When facing West, "right" = North = (px, py-1). So right[0] = grid[py-1][px].
+    it('right[0] is the cell north of player (5,4)', () => {
+      const result = getViewCells(grid, 5, 5, 'W', W, H);
+      expect(result.right[0]).toBe(getCellAt(grid, 5, 4, W, H));
+    });
+
+    it('when passage is to the right (right[0]=floor), no right side at 0 and right_cross at 1', () => {
+      const g = makeGrid(10, 10, 'floor');
+      setCell(g, 4, 5, 'wall');   // wall ahead (west)
+      setCell(g, 5, 6, 'wall');   // wall to left (south)
+      // (5,4) north = passage (leave as floor) -> right[0] = floor
+      setCell(g, 4, 4, 'wall');  // right[1] = wall (north of 1-ahead)
+      const { forward, left, right } = getViewCells(g, 5, 5, 'W', W, H);
+      expect(right[0]).toBe('floor');
+      expect(right[1]).toBe('wall');
+
+      const instructions = buildWallInstructions(forward, left, right);
+      const rightSides = instructions.filter(i => i.type === 'right');
+      const rightCrosses = instructions.filter(i => i.type === 'right_cross');
+
+      expect(rightSides.some(r => r.depth === 0)).toBe(false);
+      expect(rightCrosses.map(c => c.depth).sort()).toContain(1);
     });
   });
 
@@ -407,7 +434,7 @@ describe('buildWallInstructions', () => {
   });
 
   describe('side door renders as blocking side wall', () => {
-    it('door on left side emits cross wall instead of side wall when open beyond', () => {
+    it('door on left side emits cross at depth 1 when open beyond (passage visible)', () => {
       const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
       const left: CellType[] = ['door', 'floor', 'floor', 'floor', 'floor'];
       const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
@@ -421,8 +448,8 @@ describe('buildWallInstructions', () => {
     });
   });
 
-  describe('depth 0 side walls (immediate left/right at player position)', () => {
-    it('emits cross wall at depth 1 when wall at depth 0 opens at depth 1', () => {
+  describe('depth 0 side walls and passage visibility', () => {
+    it('emits left_cross at depth 1 when wall at depth 0 opens at depth 1 (passage visible)', () => {
       const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
       const left: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
       const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
@@ -434,7 +461,7 @@ describe('buildWallInstructions', () => {
       expect(crossWall).toBeDefined();
     });
 
-    it('emits cross wall at depth 1 when right wall at depth 0 opens at depth 1', () => {
+    it('emits right_cross at depth 1 when right wall at depth 0 opens at depth 1 (passage visible)', () => {
       const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
       const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
       const right: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
@@ -470,10 +497,11 @@ describe('buildWallInstructions', () => {
       expect(torches[0].depth).toBe(2);
     });
 
-    it('no torch on front wall at depth 5 (wall too narrow, width < 60)', () => {
-      const forward: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor', 'wall'];
-      const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor', 'floor', 'floor'];
-      const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor', 'floor', 'floor'];
+    it('no torch on front wall at farthest depth (wall too narrow, width < 60)', () => {
+      const viewDepth = DEPTHS.length - 1;
+      const forward: CellType[] = [...Array(viewDepth).fill('floor'), 'wall'];
+      const left: CellType[] = Array(DEPTHS.length).fill('floor');
+      const right: CellType[] = Array(DEPTHS.length).fill('floor');
 
       const result = buildWallInstructions(forward, left, right);
       const torches = result.filter(i => i.type === 'torch');
@@ -536,35 +564,68 @@ describe('buildWallInstructions', () => {
       });
     });
 
-    describe('far-face: wall ends deeper (open further)', () => {
-      it('emits left_cross at depth 1 when wall at depth 0 opens at depth 1', () => {
+    describe('passage visibility: opening at depth 1 (minimap matches first-person view)', () => {
+      it('passage on right at depth 1: emits right_cross at 1 and no right side at 0 so opening is visible', () => {
+        // Player in corridor; cell to immediate right (depth 0) is wall, cell to right at depth 1 is floor (passage)
+        const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
+        const left: CellType[] = ['wall', 'wall', 'wall', 'wall', 'floor'];
+        const right: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
+
+        const result = buildWallInstructions(forward, left, right);
+        const rightSides = result.filter(i => i.type === 'right');
+        const rightCrosses = result.filter(i => i.type === 'right_cross');
+        expect(rightSides.find(r => r.depth === 0)).toBeUndefined();
+        expect(rightCrosses.some(c => c.depth === 1)).toBe(true);
+      });
+
+      it('passage on left at depth 1: emits left_cross at 1 and no left side at 0 so opening is visible', () => {
+        const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
+        const left: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
+        const right: CellType[] = ['wall', 'wall', 'wall', 'wall', 'floor'];
+
+        const result = buildWallInstructions(forward, left, right);
+        const leftSides = result.filter(i => i.type === 'left');
+        const leftCrosses = result.filter(i => i.type === 'left_cross');
+        expect(leftSides.find(l => l.depth === 0)).toBeUndefined();
+        expect(leftCrosses.some(c => c.depth === 1)).toBe(true);
+      });
+    });
+
+    describe('far-face: cross only at d+1 when d=0 (passage visible); no far cross when d>0', () => {
+      it('emits left_cross at depth 1 when wall at depth 0 opens at depth 1 (passage visible)', () => {
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const left: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
         const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
         const result = buildWallInstructions(forward, left, right);
+        const lefts = result.filter(i => i.type === 'left');
+        expect(lefts).toHaveLength(0);
         const crosses = result.filter(i => i.type === 'left_cross');
         expect(crosses).toHaveLength(1);
         expect(crosses[0].depth).toBe(1);
       });
 
-      it('emits right_cross at depth 3 when right wall at depths 0-2 opens at depth 3', () => {
+      it('emits right side at 0,1 and far cross at 3 when right wall at depths 0-2 opens at depth 3 (strip at d shows right[d+1])', () => {
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
         const right: CellType[] = ['wall', 'wall', 'wall', 'floor', 'floor'];
 
         const result = buildWallInstructions(forward, left, right);
+        const rights = result.filter(i => i.type === 'right');
+        expect(rights.map(r => r.depth).sort((a, b) => a - b)).toEqual([0, 1]);
         const crosses = result.filter(i => i.type === 'right_cross');
         expect(crosses).toHaveLength(1);
         expect(crosses[0].depth).toBe(3);
       });
 
-      it('emits far-face cross wall when continuous wall ends', () => {
+      it('emits left side at 0 and far cross at 2 when continuous wall ends at depth 2 (strip at d shows left[d+1])', () => {
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const left: CellType[] = ['wall', 'wall', 'floor', 'floor', 'floor'];
         const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
         const result = buildWallInstructions(forward, left, right);
+        const lefts = result.filter(i => i.type === 'left');
+        expect(lefts.map(l => l.depth).sort((a, b) => a - b)).toEqual([0]);
         const crosses = result.filter(i => i.type === 'left_cross');
         expect(crosses).toHaveLength(1);
         expect(crosses[0].depth).toBe(2);
@@ -572,8 +633,7 @@ describe('buildWallInstructions', () => {
     });
 
     describe('both faces: isolated wall segment', () => {
-      it('emits two cross walls for a single wall segment (near and far face)', () => {
-        // wall only at depth 1, open on both sides
+      it('emits cross at 1 (near) and 2 (far) for isolated wall at depth 1; no side strip at 0 when right[0]=F (passage visible)', () => {
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const right: CellType[] = ['floor', 'wall', 'floor', 'floor', 'floor'];
         const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
@@ -582,17 +642,21 @@ describe('buildWallInstructions', () => {
         const crosses = result.filter(i => i.type === 'right_cross');
         expect(crosses).toHaveLength(2);
         expect(crosses.map(c => c.depth).sort()).toEqual([1, 2]);
+        const rights = result.filter(i => i.type === 'right');
+        expect(rights).toHaveLength(0);
       });
 
-      it('emits four cross walls for two isolated wall segments', () => {
-        // wall at depth 1 and depth 3, open elsewhere
+      it('emits cross walls for two isolated wall segments (near and far face where in view)', () => {
+        // wall at depth 1 and depth 3, open elsewhere; forward length 4 so maxDepth=3
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const right: CellType[] = ['floor', 'wall', 'floor', 'wall', 'floor'];
         const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
         const result = buildWallInstructions(forward, left, right);
         const crosses = result.filter(i => i.type === 'right_cross');
+        // Segment at d=1: near cross 1, far cross 2. Segment at d=3: near cross 3 (far at 4 beyond maxDepth)
         expect(crosses).toHaveLength(3);
+        expect(crosses.map(c => c.depth).sort()).toEqual([1, 2, 3]);
       });
     });
 
@@ -611,14 +675,14 @@ describe('buildWallInstructions', () => {
     describe('passage opening: classic dungeon corridor', () => {
       it('corridor walls with passage opening on right at depth 1', () => {
         // walls on both sides, but right opens at depth 1
+        // depth 1: far-face so passage visible (wall at 0 ends)
+        // depth 2: near-face of wall at depth 2 (wall starts again after passage)
         const forward: CellType[] = ['floor', 'floor', 'floor', 'floor'];
         const left: CellType[] = ['wall', 'wall', 'wall', 'wall', 'floor'];
         const right: CellType[] = ['wall', 'floor', 'wall', 'wall', 'floor'];
 
         const result = buildWallInstructions(forward, left, right);
         const rightCrosses = result.filter(i => i.type === 'right_cross');
-        // depth 1: far-face of wall at depth 0 (wall ends, passage opens)
-        // depth 2: near-face of wall at depth 2 (wall starts again after passage)
         expect(rightCrosses).toHaveLength(2);
         expect(rightCrosses.map(c => c.depth).sort()).toEqual([1, 2]);
       });
@@ -640,14 +704,14 @@ describe('buildWallInstructions', () => {
       const rightCross = result.filter(i => i.type === 'right_cross');
       const fronts = result.filter(i => i.type === 'front');
 
-      // Left: isolated segments at d=0 and d=2, both have far-face transitions
-      // so no side walls, only cross walls
-      expect(leftWalls).toHaveLength(0);
+      // Left: passage at d=1 cross at 1; wall at d=2 has side at d=1 (strip shows left[2]=W), near cross at 2, far cross at 3
+      expect(leftWalls.map(i => i.depth).sort()).toEqual([1]);
       expect(leftCross.map(i => i.depth).sort()).toEqual([1, 2, 3]);
 
-      // Right: continuous wall d=0,1,2, opens at d=3 — far-face on d=2 removes its side wall
-      expect(rightWalls.map(i => i.depth)).toEqual([1, 0]);
-      expect(rightCross.map(i => i.depth)).toEqual([3]);
+      // Right: strip at d shows right[d+1]; opening at d=3 so far cross at 3
+      expect(rightWalls.map(i => i.depth).sort()).toEqual([0, 1]);
+      expect(rightCross).toHaveLength(1);
+      expect(rightCross[0].depth).toBe(3);
 
       expect(fronts).toHaveLength(1);
       expect(fronts[0].depth).toBe(1);

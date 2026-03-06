@@ -291,13 +291,18 @@ export default function GameScreen() {
           </div>
         )}
 
-        {/* Dungeon viewport */}
+        {/* Dungeon viewport: aspect ratio so view fills the area with more panels visible */}
         <div style={{
           flex: isMobile ? undefined : 1,
           display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center',
           minHeight: 0,
         }}>
-          <div style={{ width: '100%', maxWidth: isMobile ? undefined : 700 }}>
+          <div style={{
+            width: '100%',
+            maxWidth: isMobile ? undefined : 700,
+            aspectRatio: '3/2',
+            minHeight: 200,
+          }}>
             <DungeonView />
           </div>
         </div>
