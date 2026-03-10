@@ -26,7 +26,7 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   {
     id: 'giant_spider', name: 'Giant Spider', maxHp: 30, attack: 12, defense: 6, speed: 11,
     xpReward: 45, goldReward: 18, minFloor: 2, svgComponent: 'GiantSpiderSVG',
-    lootTable: [{ itemId: 'antidote', chance: 0.3 }, { itemId: 'short_bow', chance: 0.08 }],
+    lootTable: [{ itemId: 'health_potion_small', chance: 0.25 }, { itemId: 'short_bow', chance: 0.08 }],
   },
   {
     id: 'dark_mage', name: 'Dark Mage', maxHp: 22, attack: 16, defense: 4, speed: 9,

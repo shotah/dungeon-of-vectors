@@ -7,7 +7,7 @@ interface ShopTier {
 }
 
 const SHOP_TIERS: ShopTier[] = [
-  { minFloor: 1, itemIds: ['health_potion_small', 'antidote', 'dungeon_key'] },
+  { minFloor: 1, itemIds: ['health_potion_small', 'mana_potion', 'dungeon_key'] },
   { minFloor: 1, itemIds: ['health_potion', 'mana_potion', 'tent'] },
   { minFloor: 2, itemIds: ['rusty_sword', 'dagger', 'leather_armor'] },
   { minFloor: 2, itemIds: ['apprentice_staff', 'mage_robe'] },
