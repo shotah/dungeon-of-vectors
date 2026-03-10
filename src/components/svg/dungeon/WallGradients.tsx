@@ -1,21 +1,35 @@
-export default function WallGradients() {
+import { darkenHex, floorDarkenAmount } from '../../../utils/floorGradient';
+
+type WallGradientsProps = { floor?: number };
+
+export default function WallGradients({ floor = 1 }: WallGradientsProps) {
+  const t = floorDarkenAmount(floor);
+  const wallTop = darkenHex('#5e5e72', t);
+  const wallBottom = darkenHex('#3a3a50', t);
+  const sideTop = darkenHex('#3a3a4a', t);
+  const sideBottom = darkenHex('#2a2a3a', t);
+  const floorTop = darkenHex('#1a1a2e', t);
+  const floorBottom = darkenHex('#16213e', t);
+  const ceilTop = darkenHex('#1a1a2e', t);
+  const ceilBottom = darkenHex('#0f0f1a', t);
+
   return (
     <defs>
       <linearGradient id="wallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#5e5e72" />
-        <stop offset="100%" stopColor="#3a3a50" />
+        <stop offset="0%" stopColor={wallTop} />
+        <stop offset="100%" stopColor={wallBottom} />
       </linearGradient>
       <linearGradient id="sideWallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#3a3a4a" />
-        <stop offset="100%" stopColor="#2a2a3a" />
+        <stop offset="0%" stopColor={sideTop} />
+        <stop offset="100%" stopColor={sideBottom} />
       </linearGradient>
       <linearGradient id="floorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#1a1a2e" />
-        <stop offset="100%" stopColor="#16213e" />
+        <stop offset="0%" stopColor={floorTop} />
+        <stop offset="100%" stopColor={floorBottom} />
       </linearGradient>
       <linearGradient id="ceilGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stopColor="#1a1a2e" />
-        <stop offset="100%" stopColor="#0f0f1a" />
+        <stop offset="0%" stopColor={ceilTop} />
+        <stop offset="100%" stopColor={ceilBottom} />
       </linearGradient>
       <linearGradient id="doorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stopColor="#8B4513" />

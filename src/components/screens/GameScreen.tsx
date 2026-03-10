@@ -8,6 +8,7 @@ import MiniMap from '../hud/MiniMap';
 import MessageLog from '../hud/MessageLog';
 import Button from '../ui/Button';
 import RestingScene from '../svg/screens/RestingScene';
+import { getGameBackground } from '../../utils/floorGradient';
 
 const CombatScreen = lazy(() => import('../combat/CombatScreen'));
 const InventoryPanel = lazy(() => import('../hud/InventoryPanel'));
@@ -155,7 +156,7 @@ export default function GameScreen() {
     <div style={{
       display: 'flex', flexDirection: isMobile ? 'column' : 'row',
       height: '100vh',
-      background: '#0a0a15', fontFamily: 'monospace', color: '#ddd',
+      background: getGameBackground(currentFloor), fontFamily: 'monospace', color: '#ddd',
       overflow: 'hidden',
     }}>
       {/* Desktop: sidebar (left) */}

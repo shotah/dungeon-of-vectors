@@ -7,11 +7,13 @@ import { SideWall, FrontWall } from '../svg/dungeon/WallPanels';
 import TorchSconce from '../svg/dungeon/TorchSconce';
 import FloorAndCeiling from '../svg/dungeon/FloorAndCeiling';
 import { getViewCells, buildWallInstructions, getPrompt } from './dungeonViewUtils';
+import { getDungeonViewBackground } from '../../utils/floorGradient';
 
 export default function DungeonView() {
   const dungeon = useGameStore(s => s.dungeon);
   const position = useGameStore(s => s.position);
   const facing = useGameStore(s => s.facing);
+  const currentFloor = useGameStore(s => s.currentFloor);
 
   if (!dungeon) return null;
 
@@ -71,10 +73,10 @@ export default function DungeonView() {
       viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
       width="100%"
       height="100%"
-      style={{ background: '#0a0a15', borderRadius: 8, border: '2px solid #333' }}
+      style={{ background: getDungeonViewBackground(currentFloor), borderRadius: 8, border: '2px solid #333' }}
     >
-      <WallGradients />
-      <FloorAndCeiling />
+      <WallGradients floor={currentFloor} />
+      <FloorAndCeiling floor={currentFloor} />
       {wallElements}
       {prompt && (
         <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT - 15} textAnchor="middle" fill={prompt.color} fontSize="14" fontFamily="monospace">

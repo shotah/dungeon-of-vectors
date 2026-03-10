@@ -1,4 +1,5 @@
 import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
+import { darkenHex, floorDarkenAmount } from '../../../utils/floorGradient';
 
 const COLS = 8;
 
@@ -21,9 +22,16 @@ function buildFloorGrid() {
   return grid;
 }
 
-export default function FloorAndCeiling() {
+type FloorAndCeilingProps = { floor?: number };
+
+export default function FloorAndCeiling({ floor = 1 }: FloorAndCeilingProps) {
   const vanishX = VIEW_WIDTH / 2;
   const vanishY = VIEW_HEIGHT / 2;
+  const t = floorDarkenAmount(floor);
+  const tileDark = darkenHex('#171730', t);
+  const tileLight = darkenHex('#1e1e3a', t);
+  const strokeColor = darkenHex('#2e2e48', t);
+  const lineColor = darkenHex('#15152a', t);
 
   const floorGrid = buildFloorGrid();
 
@@ -44,8 +52,8 @@ export default function FloorAndCeiling() {
             <polygon
               key={`ft-${d}-${c}`}
               points={`${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`}
-              fill={dark ? '#171730' : '#1e1e3a'}
-              stroke="#2e2e48"
+              fill={dark ? tileDark : tileLight}
+              stroke={strokeColor}
               strokeWidth={d < 3 ? 0.8 : 0.4}
               opacity={opacity}
             />
@@ -57,13 +65,13 @@ export default function FloorAndCeiling() {
         <line key={`cv-${i}`}
           x1={(i * VIEW_WIDTH) / 8} y1={0}
           x2={vanishX} y2={vanishY}
-          stroke="#15152a" strokeWidth="0.5" opacity="0.2"
+          stroke={lineColor} strokeWidth="0.5" opacity="0.2"
         />
       ))}
       {DEPTHS.slice(1).map((d, i) => (
         <line key={`ch-${i}`}
           x1={d.left} y1={d.top} x2={d.right} y2={d.top}
-          stroke="#15152a" strokeWidth="0.5"
+          stroke={lineColor} strokeWidth="0.5"
           opacity={Math.max(0.08, 0.25 - i * 0.04)}
         />
       ))}
