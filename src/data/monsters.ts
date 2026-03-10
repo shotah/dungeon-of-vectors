@@ -92,8 +92,17 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   },
 ];
 
+/** How many floors back we still allow monsters (e.g. 2 = floor 7 can show minFloor 5, 6, 7). */
+const FLOOR_RANGE = 2;
+
+/**
+ * Returns monster templates that can spawn on this floor.
+ * Only includes monsters whose minFloor is within FLOOR_RANGE of the current floor,
+ * so deep floors don't keep showing rats and slimes.
+ */
 export function getMonstersForFloor(floor: number): MonsterTemplate[] {
-  return MONSTER_TEMPLATES.filter(m => m.minFloor <= floor);
+  const minAllowed = Math.max(1, floor - FLOOR_RANGE);
+  return MONSTER_TEMPLATES.filter(m => m.minFloor <= floor && m.minFloor >= minAllowed);
 }
 
 export function spawnMonster(template: MonsterTemplate, floorScale = 1): Monster {

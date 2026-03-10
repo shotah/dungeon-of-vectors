@@ -10,6 +10,7 @@ import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/m
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
 import { getBuyPrice, getSellPrice } from '../data/trader';
 import { getItem, canEquipItem } from '../data/items';
+import { getDescentFlavor } from '../data/descentFlavor';
 import {
   buildTurnOrder, getEffectiveAttack,
   performAttack, performSpell, performAbility, monsterAI, canFlee,
@@ -387,6 +388,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       exploredMaps: { ...exploredMaps, [nextFloor]: map },
     });
     get().addMessage(`You descend to floor ${nextFloor}...`, 'system');
+    const flavor = getDescentFlavor(nextFloor);
+    if (flavor) get().addMessage(flavor, 'info');
 
     // Auto-save
     get().saveGame(0);
