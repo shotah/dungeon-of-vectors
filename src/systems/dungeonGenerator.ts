@@ -175,9 +175,9 @@ export function generateDungeon(seed: number, floor: number, maxFloor?: number):
   // Fill remaining walls with maze passages
   addMazePaths(grid, rng);
 
-  // Place start in first room
+  // Place start (floor 1) or stairs up (floor 2+) in first room
   const startPos = roomCenter(rooms[0]);
-  grid[startPos.y][startPos.x].type = 'start';
+  grid[startPos.y][startPos.x].type = floor === 1 ? 'start' : 'stairs_up';
 
   // Place stairs down (or boss on final floor) in last room
   const stairsPos = roomCenter(rooms[rooms.length - 1]);
@@ -260,10 +260,20 @@ export function generateDungeon(seed: number, floor: number, maxFloor?: number):
 export function getStartPosition(dungeon: DungeonFloor): Position {
   for (let y = 0; y < dungeon.height; y++) {
     for (let x = 0; x < dungeon.width; x++) {
-      if (dungeon.grid[y][x].type === 'start') {
+      const t = dungeon.grid[y][x].type;
+      if (t === 'start' || t === 'stairs_up') return { x, y };
+    }
+  }
+  return { x: 1, y: 1 };
+}
+
+export function getStairsDownPosition(dungeon: DungeonFloor): Position {
+  for (let y = 0; y < dungeon.height; y++) {
+    for (let x = 0; x < dungeon.width; x++) {
+      if (dungeon.grid[y][x].type === 'stairs_down') {
         return { x, y };
       }
     }
   }
-  return { x: 1, y: 1 };
+  return getStartPosition(dungeon);
 }

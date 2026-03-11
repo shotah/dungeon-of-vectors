@@ -1,6 +1,9 @@
 export const VIEW_WIDTH = 600;
 export const VIEW_HEIGHT = 400;
 
+/** Vertical y where the floor plane starts (smaller = floor comes up higher). */
+export const FLOOR_TOP_Y = 120;
+
 export interface DepthConfig {
   left: number;
   right: number;

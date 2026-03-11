@@ -83,6 +83,7 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
       else if (cell.type === 'wall') color = '#667';
       else if (cell.type === 'door') color = '#8B4513';
       else if (cell.type === 'stairs_down') color = '#44aaff';
+      else if (cell.type === 'stairs_up') color = '#66bbff';
       else if (cell.type === 'chest') color = '#daa520';
       else if (cell.type === 'trader') color = '#44dd44';
       else if (cell.type === 'boss') color = '#ff3333';

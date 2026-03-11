@@ -112,6 +112,9 @@ export function buildWallInstructions(
     if (fwdCell === 'stairs_down') {
       instructions.push({ type: 'front', depth: d, cellType: 'stairs_down' });
     }
+    if (fwdCell === 'stairs_up') {
+      instructions.push({ type: 'front', depth: d, cellType: 'stairs_up' });
+    }
     if (fwdCell === 'chest') {
       instructions.push({ type: 'front', depth: d, cellType: 'chest' });
     }
@@ -133,13 +136,16 @@ export interface PromptInfo {
 
 export function getPrompt(
   currentCellType: CellType | null,
-  facingCellType: CellType | null
+  facingCellType: CellType | null,
+  isOnStairsUp?: boolean
 ): PromptInfo | null {
+  if (isOnStairsUp) return { text: 'Press SPACE to ascend', color: '#aaccff' };
   if (currentCellType === 'stairs_down') return { text: 'Press SPACE to descend', color: '#aaccff' };
   if (currentCellType === 'trader') return { text: 'Press SPACE to trade', color: '#44dd44' };
   if (facingCellType === 'chest') return { text: 'Press SPACE to open chest', color: '#daa520' };
   if (facingCellType === 'trader') return { text: 'Press SPACE to trade', color: '#44dd44' };
   if (facingCellType === 'stairs_down') return { text: 'Stairs ahead', color: '#aaccff' };
+  if (facingCellType === 'stairs_up') return { text: 'Stairs up ahead', color: '#aaccff' };
   if (currentCellType === 'boss') return { text: 'A dark presence awaits... [Space] to confront', color: '#ff4444' };
   if (facingCellType === 'boss') return { text: 'A dark presence awaits... [Space] to confront', color: '#ff4444' };
   return null;

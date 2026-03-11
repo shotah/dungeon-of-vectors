@@ -14,8 +14,11 @@ export default function DungeonView() {
   const position = useGameStore(s => s.position);
   const facing = useGameStore(s => s.facing);
   const currentFloor = useGameStore(s => s.currentFloor);
+  const stairsUpPosition = useGameStore(s => s.stairsUpPosition);
 
   if (!dungeon) return null;
+
+  const isOnStairsUp = currentFloor > 1 && !!stairsUpPosition && position.x === stairsUpPosition.x && position.y === stairsUpPosition.y;
 
   const typeGrid = dungeon.grid.map(row => row.map(cell => cell.type));
   const { forward, left, right } = getViewCells(
@@ -66,7 +69,7 @@ export default function DungeonView() {
   const facingType = (ax >= 0 && ax < dungeon.width && ay >= 0 && ay < dungeon.height)
     ? dungeon.grid[ay][ax].type : null;
 
-  const prompt = getPrompt(currentCell?.type ?? null, facingType);
+  const prompt = getPrompt(currentCell?.type ?? null, facingType, isOnStairsUp);
 
   return (
     <svg

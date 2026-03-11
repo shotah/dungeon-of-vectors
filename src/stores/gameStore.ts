@@ -5,7 +5,7 @@ import type {
   GameSave, SaveSlot, CombatAction, Spell, Ability, PendingLevelUp,
 } from '../types';
 import { CLASS_DEFINITIONS, calculateXpToNext, HP_PER_VIT, MP_PER_INT, STR_PER_PT, AGI_PER_PT } from '../data/classes';
-import { generateDungeon, getStartPosition } from '../systems/dungeonGenerator';
+import { generateDungeon, getStartPosition, getStairsDownPosition } from '../systems/dungeonGenerator';
 import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
 import { getBuyPrice, getSellPrice } from '../data/trader';
@@ -39,6 +39,8 @@ interface GameState {
   dungeon: DungeonFloor | null;
   position: Position;
   facing: Direction;
+  /** On current floor, the tile that has stairs up (entrance from above). Null on floor 1. */
+  stairsUpPosition: Position | null;
   exploredMaps: Record<number, boolean[][]>;
   gridChanges: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
 
@@ -65,6 +67,10 @@ interface GameState {
   messages: MessageLogEntry[];
   addMessage: (text: string, type?: MessageLogEntry['type']) => void;
 
+  // Descent flavor popup (atmospheric message when going down stairs)
+  descentFlavorPopup: string | null;
+  dismissDescentFlavor: () => void;
+
   // Playtime
   playtime: number;
   startTime: number;
@@ -79,6 +85,7 @@ interface GameState {
   turnPlayerLeft: () => void;
   turnPlayerRight: () => void;
   goDownstairs: () => void;
+  goUpstairs: () => void;
   interact: () => void;
 
   // Combat actions
@@ -199,6 +206,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   dungeon: null,
   position: { x: 0, y: 0 },
   facing: 'N',
+  stairsUpPosition: null,
   exploredMaps: {},
   gridChanges: {},
 
@@ -214,6 +222,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   bossDefeated: false,
 
   messages: [],
+  descentFlavorPopup: null,
+  dismissDescentFlavor: () => set({ descentFlavorPopup: null }),
+
   addMessage: (text, type = 'info') => set(state => ({
     messages: [...state.messages.slice(-50), { text, type, timestamp: Date.now() }],
   })),
@@ -242,6 +253,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       facing: 'N',
       exploredMaps: explored,
       gridChanges: {},
+      stairsUpPosition: null,
       pendingLevelUps: [],
       bossDefeated: false,
       messages: [{ text: 'You descend into the dungeon...', type: 'system', timestamp: Date.now() }],
@@ -256,6 +268,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
+      descentFlavorPopup: null,
     });
     startFloorMusic(get().currentFloor, () => get().currentFloor);
   },
@@ -389,20 +402,55 @@ export const useGameStore = create<GameState>((set, get) => ({
       dungeon: newDungeon,
       position: startPos,
       facing: 'N',
+      stairsUpPosition: startPos,
       exploredMaps: { ...exploredMaps, [nextFloor]: map },
     });
     get().addMessage(`You descend to floor ${nextFloor}...`, 'system');
     const flavor = getDescentFlavor(nextFloor);
-    if (flavor) get().addMessage(flavor, 'info');
+    if (flavor) {
+      get().addMessage(flavor, 'info');
+      set({ descentFlavorPopup: flavor });
+    }
     startFloorMusic(nextFloor, () => get().currentFloor);
 
     // Auto-save
     get().saveGame(0);
   },
 
+  goUpstairs: () => {
+    const { dungeon, dungeonSeed, currentFloor, maxFloor, exploredMaps, gridChanges } = get();
+    if (!dungeon || currentFloor <= 1) return;
+    const { position, stairsUpPosition } = get();
+    if (!stairsUpPosition || position.x !== stairsUpPosition.x || position.y !== stairsUpPosition.y) return;
+
+    const prevFloor = currentFloor - 1;
+    const prevDungeon = generateDungeon(dungeonSeed, prevFloor, maxFloor);
+    if (gridChanges[prevFloor]?.length) {
+      applyGridChanges(prevDungeon, gridChanges[prevFloor]);
+    }
+    const landPos = getStairsDownPosition(prevDungeon);
+    const map = exploredMaps[prevFloor] ?? createExploredMap(prevDungeon.width, prevDungeon.height);
+
+    set({
+      currentFloor: prevFloor,
+      dungeon: prevDungeon,
+      position: landPos,
+      facing: 'N',
+      stairsUpPosition: prevFloor === 1 ? null : getStartPosition(prevDungeon),
+      exploredMaps: { ...exploredMaps, [prevFloor]: map },
+    });
+    get().addMessage(`You ascend to floor ${prevFloor}...`, 'system');
+    startFloorMusic(prevFloor, () => get().currentFloor);
+  },
+
   interact: () => {
-    const { position, facing, dungeon, currentFloor, showTrader, combat, resting } = get();
+    const { position, facing, dungeon, currentFloor, showTrader, combat, resting, stairsUpPosition } = get();
     if (!dungeon || combat.active || showTrader || resting) return;
+
+    if (currentFloor > 1 && stairsUpPosition && position.x === stairsUpPosition.x && position.y === stairsUpPosition.y) {
+      get().goUpstairs();
+      return;
+    }
 
     const ahead = moveInDirection(position, facing);
     if (ahead.x >= 0 && ahead.x < dungeon.width && ahead.y >= 0 && ahead.y < dungeon.height) {
@@ -1008,6 +1056,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (loadedGridChanges[save.currentFloor]) {
       applyGridChanges(dungeon, loadedGridChanges[save.currentFloor]);
     }
+    const stairsUp = save.currentFloor > 1 ? getStartPosition(dungeon) : null;
     set({
       party: save.party,
       inventory: save.inventory,
@@ -1019,6 +1068,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gridChanges: loadedGridChanges,
       position: save.position,
       facing: save.facing,
+      stairsUpPosition: stairsUp,
       exploredMaps: save.exploredMaps,
       pendingLevelUps: [],
       bossDefeated: false,
@@ -1033,6 +1083,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
+      descentFlavorPopup: null,
     });
     startFloorMusic(save.currentFloor, () => get().currentFloor);
   },

@@ -125,6 +125,77 @@ export function FrontWall({ depth, cellType, side }: { depth: number; cellType?:
     );
   }
 
+  if (cellType === 'stairs_up') {
+    const next = depth < DEPTHS.length - 1 ? DEPTHS[depth + 1] : EXTENDED_DEPTH;
+    const vanishX = VIEW_WIDTH / 2;
+    const vanishY = VIEW_HEIGHT / 2;
+    const tTopNear = (d.top - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+    const tTopFar = (next.top - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+    const inset = 0.15;
+    const nearL = d.left + (d.right - d.left) * inset;
+    const nearR = d.right - (d.right - d.left) * inset;
+    const ceilNearL = nearL + (vanishX - nearL) * tTopNear;
+    const ceilNearR = nearR + (vanishX - nearR) * tTopNear;
+    const ceilFarL = nearL + (vanishX - nearL) * tTopFar;
+    const ceilFarR = nearR + (vanishX - nearR) * tTopFar;
+
+    const bandH = d.bottom - d.top;
+    const stepCount = 5;
+    const stepH = bandH * 0.15;
+    const stairBottom = d.bottom - bandH * 0.1;
+    const fullWidth = (d.right - d.left) * 0.6;
+    const cx = (d.left + d.right) / 2;
+    const taper = 0.5;
+
+    const steps = Array.from({ length: stepCount }, (_, i) => {
+      const t = stepCount > 1 ? i / (stepCount - 1) : 0;
+      const w = fullWidth * (1 - t * taper);
+      return {
+        l: cx - w / 2,
+        r: cx + w / 2,
+        bot: stairBottom - i * stepH,
+        top: stairBottom - (i + 1) * stepH,
+      };
+    });
+
+    return (
+      <g>
+        {/* Dark shaft on ceiling */}
+        <polygon
+          points={`${ceilNearL},${d.top} ${ceilNearR},${d.top} ${ceilFarR},${next.top} ${ceilFarL},${next.top}`}
+          fill="#050510"
+        />
+        <polygon
+          points={`${ceilNearL},${d.top} ${ceilNearR},${d.top} ${ceilFarR},${next.top} ${ceilFarL},${next.top}`}
+          fill="none" stroke="#3a3a55" strokeWidth="1"
+        />
+
+        {/* Per-step shading */}
+        {steps.map((s, i) => {
+          const shade = 75 - i * 8;
+          const treadPortion = stepH * 0.45;
+          const treadBot = s.top + treadPortion;
+          const above = steps[i + 1];
+          const topL = above ? above.l : s.l + (s.r - s.l) * 0.1;
+          const topR = above ? above.r : s.r - (s.r - s.l) * 0.1;
+          return (
+            <g key={i}>
+              {/* Tread: trapezoid sloping inward to meet the step above */}
+              <polygon
+                points={`${s.l},${treadBot} ${s.r},${treadBot} ${topR},${s.top} ${topL},${s.top}`}
+                fill={`rgb(${shade - 12},${shade - 12},${shade + 10})`} />
+              {/* Riser: front face, brighter */}
+              <rect x={s.l} y={treadBot} width={s.r - s.l} height={stepH - treadPortion}
+                fill={`rgb(${shade},${shade},${shade + 25})`} />
+              {/* Step edge */}
+              <line x1={s.l} y1={s.bot} x2={s.r} y2={s.bot} stroke="#555577" strokeWidth="0.8" />
+            </g>
+          );
+        })}
+      </g>
+    );
+  }
+
   if (cellType === 'chest') {
     const cw = (d.right - d.left) * 0.3;
     const ch = (d.bottom - d.top) * 0.25;

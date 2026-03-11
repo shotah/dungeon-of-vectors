@@ -71,6 +71,8 @@ export default function GameScreen() {
   const turnPlayerLeft = useGameStore(s => s.turnPlayerLeft);
   const turnPlayerRight = useGameStore(s => s.turnPlayerRight);
   const goDownstairs = useGameStore(s => s.goDownstairs);
+  const goUpstairs = useGameStore(s => s.goUpstairs);
+  const stairsUpPosition = useGameStore(s => s.stairsUpPosition);
   const interact = useGameStore(s => s.interact);
   const combat = useGameStore(s => s.combat);
   const currentFloor = useGameStore(s => s.currentFloor);
@@ -81,9 +83,12 @@ export default function GameScreen() {
   const showTrader = useGameStore(s => s.showTrader);
   const setShowTrader = useGameStore(s => s.setShowTrader);
   const resting = useGameStore(s => s.resting);
+  const descentFlavorPopup = useGameStore(s => s.descentFlavorPopup);
+  const dismissDescentFlavor = useGameStore(s => s.dismissDescentFlavor);
   const isMobile = useIsMobile();
 
   const onStairs = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'stairs_down' : false;
+  const onStairsUp = currentFloor > 1 && !!stairsUpPosition && position.x === stairsUpPosition.x && position.y === stairsUpPosition.y;
   const onTrader = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'trader' : false;
   const onBoss = dungeon ? dungeon.grid[position.y]?.[position.x]?.type === 'boss' : false;
 
@@ -107,6 +112,10 @@ export default function GameScreen() {
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
+      if (descentFlavorPopup) {
+        dismissDescentFlavor();
+        return;
+      }
       setShowInventory(false);
       setShowSaveLoad(false);
       setShowStartOver(false);
@@ -114,6 +123,10 @@ export default function GameScreen() {
       return;
     }
 
+    if (descentFlavorPopup) {
+      dismissDescentFlavor();
+      return;
+    }
     if (combat.active || showInventory || showSaveLoad || showStartOver || showTrader || resting) return;
 
     switch (e.key) {
@@ -129,20 +142,22 @@ export default function GameScreen() {
           case 'i': setShowInventory(true); break;
         }
     }
-  }, [combat.active, showInventory, showSaveLoad, showStartOver, showTrader, resting, setShowTrader, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, interact, handleQuickSave]);
+  }, [descentFlavorPopup, dismissDescentFlavor, combat.active, showInventory, showSaveLoad, showStartOver, showTrader, resting, setShowTrader, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, interact, handleQuickSave]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const actionButton = onStairs ? (
+  const actionButton = onStairsUp ? (
+    <Button size="sm" variant="secondary" onClick={goUpstairs} style={isMobile ? { flex: 1 } : undefined}>⬆ Ascend</Button>
+  ) : onStairs ? (
     <Button size="sm" variant="gold" onClick={goDownstairs} style={isMobile ? { flex: 1 } : undefined}>⬇ Descend</Button>
   ) : onTrader ? (
     <Button size="sm" variant="gold" onClick={() => setShowTrader(true)} style={isMobile ? { flex: 1 } : undefined}>💰 Trade</Button>
-  ) : !onStairs && !onTrader && facingCellType === 'chest' ? (
+  ) : !onStairs && !onStairsUp && !onTrader && facingCellType === 'chest' ? (
     <Button size="sm" variant="gold" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>🗝 Open Chest</Button>
-  ) : !onStairs && !onTrader && facingCellType === 'trader' ? (
+  ) : !onStairs && !onStairsUp && !onTrader && facingCellType === 'trader' ? (
     <Button size="sm" variant="gold" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>💰 Trade</Button>
   ) : (onBoss || facingCellType === 'boss') ? (
     <Button size="sm" variant="danger" onClick={interact} style={isMobile ? { flex: 1 } : undefined}>⚔ Confront</Button>
@@ -159,6 +174,39 @@ export default function GameScreen() {
       background: getGameBackground(currentFloor), fontFamily: 'monospace', color: '#ddd',
       overflow: 'hidden',
     }}>
+      {/* Descent flavor popup */}
+      {descentFlavorPopup && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 80,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.75)',
+            animation: 'fadeIn 0.4s ease-out',
+          }}
+          onClick={dismissDescentFlavor}
+        >
+          <div
+            style={{
+              maxWidth: 320, padding: '24px 28px',
+              background: 'linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%)',
+              border: '2px solid #4a5a8a',
+              borderRadius: 8,
+              boxShadow: '0 0 24px rgba(0,0,0,0.5)',
+              textAlign: 'center',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 15, color: '#ccddff', lineHeight: 1.5, marginBottom: 20 }}>
+              {descentFlavorPopup}
+            </div>
+            <Button size="sm" variant="secondary" onClick={dismissDescentFlavor}>
+              Continue
+            </Button>
+            <div style={{ fontSize: 9, color: '#556', marginTop: 10 }}>Esc or any key</div>
+          </div>
+        </div>
+      )}
+
       {/* Desktop: sidebar (left) */}
       {!isMobile && (
         <div style={{
