@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import type { DungeonFloor } from '../../types';
 
-const CELL_SIZE = 6;
+const CELL_SIZE = 10;
 
 function FloorProgress({ dungeon, explored }: { dungeon: DungeonFloor; explored: boolean[][] }) {
   const ic = dungeon.initialCounts;
@@ -57,7 +57,7 @@ function FloorProgress({ dungeon, explored }: { dungeon: DungeonFloor; explored:
 
 export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
   const MAP_SIZE = mobile ? 220 : 160;
-  const cellSize = mobile ? 8 : CELL_SIZE;
+  const cellSize = mobile ? 12 : CELL_SIZE;
   const dungeon = useGameStore(s => s.dungeon);
   const position = useGameStore(s => s.position);
   const facing = useGameStore(s => s.facing);
@@ -70,8 +70,8 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
   if (!explored) return null;
 
   const cs = cellSize;
-  const offsetX = Math.max(0, position.x * cs - MAP_SIZE / 2);
-  const offsetY = Math.max(0, position.y * cs - MAP_SIZE / 2);
+  const offsetX = position.x * cs + cs / 2 - MAP_SIZE / 2;
+  const offsetY = position.y * cs + cs / 2 - MAP_SIZE / 2;
 
   const cells: React.ReactElement[] = [];
   for (let y = 0; y < dungeon.height; y++) {
@@ -102,7 +102,7 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
   }
 
   const arrowRotation = facing === 'N' ? 0 : facing === 'E' ? 90 : facing === 'S' ? 180 : 270;
-  const arrowSize = mobile ? 5 : 3;
+  const arrowSize = mobile ? 7 : 5;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -111,8 +111,8 @@ export default function MiniMap({ mobile = false }: { mobile?: boolean } = {}) {
         border: '2px solid #3a3a5a', borderRadius: 4, background: '#0a0a15',
       }}>
         <svg
-          width={dungeon.width * cs}
-          height={dungeon.height * cs}
+          width={MAP_SIZE}
+          height={MAP_SIZE}
           viewBox={`${offsetX} ${offsetY} ${MAP_SIZE} ${MAP_SIZE}`}
         >
           {cells}

@@ -142,8 +142,8 @@ function createCharacter(name: string, characterClass: string, index: number): C
 }
 
 function exploreAround(map: boolean[][], x: number, y: number, width: number, height: number) {
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -169,10 +169,12 @@ function exploreLOS(map: boolean[][], x: number, y: number, facing: Direction, g
     if (fx < 0 || fx >= width || fy < 0 || fy >= height) break;
     map[fy][fx] = true;
 
-    const lx = fx + ldx, ly = fy + ldy;
-    if (lx >= 0 && lx < width && ly >= 0 && ly < height) map[ly][lx] = true;
-    const rx = fx - ldx, ry = fy - ldy;
-    if (rx >= 0 && rx < width && ry >= 0 && ry < height) map[ry][rx] = true;
+    for (let s = 1; s <= 2; s++) {
+      const lx = fx + ldx * s, ly = fy + ldy * s;
+      if (lx >= 0 && lx < width && ly >= 0 && ly < height) map[ly][lx] = true;
+      const rx = fx - ldx * s, ry = fy - ldy * s;
+      if (rx >= 0 && rx < width && ry >= 0 && ry < height) map[ry][rx] = true;
+    }
 
     if (grid[fy][fx].type === 'wall') break;
   }

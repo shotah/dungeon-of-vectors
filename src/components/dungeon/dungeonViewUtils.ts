@@ -16,7 +16,7 @@ export function getViewCells(
   px: number, py: number,
   facing: Direction,
   width: number, height: number
-): { forward: CellType[]; left: CellType[]; right: CellType[] } {
+): { forward: CellType[]; left: CellType[]; right: CellType[]; leftLeft: CellType[]; rightRight: CellType[] } {
   const fd = DIRECTION_DELTAS[facing];
   const ld = facing === 'N' ? DIRECTION_DELTAS['W'] : facing === 'W' ? DIRECTION_DELTAS['S'] : facing === 'S' ? DIRECTION_DELTAS['E'] : DIRECTION_DELTAS['N'];
   const rd = { x: -ld.x, y: -ld.y };
@@ -24,9 +24,13 @@ export function getViewCells(
   const forward: CellType[] = [];
   const left: CellType[] = [];
   const right: CellType[] = [];
+  const leftLeft: CellType[] = [];
+  const rightRight: CellType[] = [];
 
   left.push(getCellAt(grid, px + ld.x, py + ld.y, width, height));
   right.push(getCellAt(grid, px + rd.x, py + rd.y, width, height));
+  leftLeft.push(getCellAt(grid, px + 2 * ld.x, py + 2 * ld.y, width, height));
+  rightRight.push(getCellAt(grid, px + 2 * rd.x, py + 2 * rd.y, width, height));
 
   const viewDepth = DEPTHS.length - 1;
   for (let d = 1; d <= viewDepth; d++) {
@@ -35,21 +39,27 @@ export function getViewCells(
     forward.push(getCellAt(grid, fx, fy, width, height));
     left.push(getCellAt(grid, fx + ld.x, fy + ld.y, width, height));
     right.push(getCellAt(grid, fx + rd.x, fy + rd.y, width, height));
+    leftLeft.push(getCellAt(grid, fx + 2 * ld.x, fy + 2 * ld.y, width, height));
+    rightRight.push(getCellAt(grid, fx + 2 * rd.x, fy + 2 * rd.y, width, height));
   }
 
-  return { forward, left, right };
+  return { forward, left, right, leftLeft, rightRight };
 }
 
 export interface WallInstruction {
-  type: 'left' | 'right' | 'front' | 'torch' | 'left_cross' | 'right_cross';
+  type: 'front' | 'torch' | 'column_wall' | 'column_side';
   depth: number;
   cellType?: CellType;
+  column?: number;
+  edge?: number;
 }
 
 export function buildWallInstructions(
   forward: CellType[],
   left: CellType[],
-  right: CellType[]
+  right: CellType[],
+  leftLeft?: CellType[],
+  rightRight?: CellType[]
 ): WallInstruction[] {
   const instructions: WallInstruction[] = [];
 
@@ -63,66 +73,76 @@ export function buildWallInstructions(
 
   const maxDepth = forward.length - 1;
   for (let d = maxDepth; d >= 0; d--) {
-    if (isBlockingSide(left[d])) {
-      const hasFarCrossL = d < maxDepth && !isBlockingSide(left[d + 1]);
-      if (!hasFarCrossL) {
-        instructions.push({ type: 'left', depth: d });
-      }
-      if (d > 0 && !isBlockingSide(left[d - 1])) {
-        instructions.push({ type: 'left_cross', depth: d });
-      }
-      if (hasFarCrossL) {
-        instructions.push({ type: 'left_cross', depth: d + 1 });
-      }
+    const sideEdges = new Set<number>();
+    const columnWalls: number[] = [];
+
+    if (leftLeft && d < leftLeft.length && isBlockingSide(leftLeft[d])) {
+      columnWalls.push(0);
+      sideEdges.add(0);
+      sideEdges.add(1);
     }
-    if (isBlockingSide(right[d])) {
-      const hasFarCrossR = d < maxDepth && !isBlockingSide(right[d + 1]);
-      if (!hasFarCrossR) {
-        instructions.push({ type: 'right', depth: d });
-      }
-      if (d > 0 && !isBlockingSide(right[d - 1])) {
-        instructions.push({ type: 'right_cross', depth: d });
-      }
-      if (hasFarCrossR) {
-        instructions.push({ type: 'right_cross', depth: d + 1 });
-      }
+    if (d < left.length && isBlockingSide(left[d])) {
+      columnWalls.push(1);
+      sideEdges.add(1);
+      sideEdges.add(2);
+    }
+    if (d < right.length && isBlockingSide(right[d])) {
+      columnWalls.push(3);
+      sideEdges.add(3);
+      sideEdges.add(4);
+    }
+    if (rightRight && d < rightRight.length && isBlockingSide(rightRight[d])) {
+      columnWalls.push(4);
+      sideEdges.add(4);
+      sideEdges.add(5);
+    }
+
+    // Side strips first (render behind column walls)
+    for (const edge of sideEdges) {
+      instructions.push({ type: 'column_side', depth: d, edge });
+    }
+    // Column walls on top of side strips
+    for (const col of columnWalls) {
+      instructions.push({ type: 'column_wall', depth: d, column: col });
     }
 
     if (nearestBlocker >= 0 && d > nearestBlocker) continue;
 
     const fwdCell = forward[d];
 
+    const frontDepth = d + 1;
+
     if (fwdCell === 'wall') {
-      instructions.push({ type: 'front', depth: d, cellType: 'wall' });
-      if (d < DEPTHS.length) {
-        const depthCfg = DEPTHS[d];
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'wall' });
+      if (frontDepth < DEPTHS.length) {
+        const depthCfg = DEPTHS[frontDepth];
         const wallW = depthCfg.right - depthCfg.left;
         if (wallW > 60) {
-          instructions.push({ type: 'torch', depth: d });
+          instructions.push({ type: 'torch', depth: frontDepth });
         }
       }
       continue;
     }
 
     if (fwdCell === 'door') {
-      instructions.push({ type: 'front', depth: d, cellType: 'door' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'door' });
       continue;
     }
 
     if (fwdCell === 'stairs_down') {
-      instructions.push({ type: 'front', depth: d, cellType: 'stairs_down' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'stairs_down' });
     }
     if (fwdCell === 'stairs_up') {
-      instructions.push({ type: 'front', depth: d, cellType: 'stairs_up' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'stairs_up' });
     }
     if (fwdCell === 'chest') {
-      instructions.push({ type: 'front', depth: d, cellType: 'chest' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'chest' });
     }
     if (fwdCell === 'trader') {
-      instructions.push({ type: 'front', depth: d, cellType: 'trader' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'trader' });
     }
     if (fwdCell === 'boss') {
-      instructions.push({ type: 'front', depth: d, cellType: 'boss' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'boss' });
     }
   }
 
