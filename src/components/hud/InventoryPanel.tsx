@@ -8,6 +8,7 @@ import Button from '../ui/Button';
 import StatBar from '../ui/StatBar';
 import { getBaseDefense, getEffectiveAttack, getEffectiveDefense } from '../../systems/combatEngine';
 import { canEquipItem, getAllowedClassesLabel } from '../../data/items';
+import { sortInventory } from '../../utils/inventorySort';
 
 function getAttackWithEquipment(char: Character, overrides: { weapon?: Item | null; armor?: Item | null; accessory?: Item | null }): number {
   const c: Character = {
@@ -40,20 +41,6 @@ function getItemStatNote(item: Item): string | null {
   if (item.defense != null && item.defense !== 0) parts.push(`${item.defense > 0 ? '+' : ''}${item.defense} DEF`);
   if (item.speed != null && item.speed !== 0) parts.push(`${item.speed > 0 ? '+' : ''}${item.speed} SPD`);
   return parts.length ? parts.join(' · ') : null;
-}
-
-const TYPE_ORDER: Record<Item['type'], number> = { weapon: 0, armor: 1, accessory: 2, consumable: 3, key: 4 };
-
-function sortInventory(items: Item[], by: 'type' | 'name' | 'value'): Item[] {
-  const copy = [...items];
-  if (by === 'type') {
-    copy.sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type] || a.name.localeCompare(b.name));
-  } else if (by === 'name') {
-    copy.sort((a, b) => a.name.localeCompare(b.name) || TYPE_ORDER[a.type] - TYPE_ORDER[b.type]);
-  } else {
-    copy.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
-  }
-  return copy;
 }
 
 export default function InventoryPanel({ onClose }: { onClose: () => void }) {

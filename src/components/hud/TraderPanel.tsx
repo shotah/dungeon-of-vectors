@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { getTraderStock, getBuyPrice, getSellPrice } from '../../data/trader';
 import { ItemIcon, GoldIcon } from '../svg/items/ItemIcons';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
+import { sortInventory } from '../../utils/inventorySort';
 
 type Tab = 'buy' | 'sell';
+type SortBy = 'type' | 'name' | 'value';
 
 export default function TraderPanel({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('buy');
+  const [sortBy, setSortBy] = useState<SortBy>('type');
   const gold = useGameStore(s => s.gold);
   const inventory = useGameStore(s => s.inventory);
   const currentFloor = useGameStore(s => s.currentFloor);
@@ -16,7 +19,8 @@ export default function TraderPanel({ onClose }: { onClose: () => void }) {
   const sellItem = useGameStore(s => s.sellItem);
 
   const stock = getTraderStock(currentFloor);
-  const sellables = inventory.filter(i => getSellPrice(i) > 0);
+  const sellablesRaw = inventory.filter(i => getSellPrice(i) > 0);
+  const sellables = useMemo(() => sortInventory(sellablesRaw, sortBy), [sellablesRaw, sortBy]);
 
   return (
     <Modal onClose={onClose} title="Wandering Trader">
@@ -45,6 +49,26 @@ export default function TraderPanel({ onClose }: { onClose: () => void }) {
           ? "Buy price is 1.5x item value. Better stock up while you can!"
           : "Sell price is 40% of item value. Lighten your pack for some coin."}
       </div>
+
+      {tab === 'sell' && sellablesRaw.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10, color: '#667' }}>Sort:</span>
+          {(['type', 'name', 'value'] as const).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setSortBy(mode)}
+              style={{
+                fontSize: 10, padding: '2px 6px', border: `1px solid ${sortBy === mode ? '#4a6aaa' : '#3a3a5a'}`,
+                borderRadius: 3, background: sortBy === mode ? '#2a3a5a' : '#1a1a2e', color: sortBy === mode ? '#aaccff' : '#888',
+                cursor: 'pointer', fontFamily: 'monospace',
+              }}
+            >
+              {mode === 'type' ? 'Type' : mode === 'name' ? 'Name' : 'Value'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div style={{ maxHeight: 320, overflow: 'auto' }}>
         {tab === 'buy' && stock.map((item, i) => {
