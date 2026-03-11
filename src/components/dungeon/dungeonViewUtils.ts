@@ -110,37 +110,39 @@ export function buildWallInstructions(
 
     const fwdCell = forward[d];
 
+    const frontDepth = d + 1;
+
     if (fwdCell === 'wall') {
-      instructions.push({ type: 'front', depth: d, cellType: 'wall' });
-      if (d < DEPTHS.length) {
-        const depthCfg = DEPTHS[d];
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'wall' });
+      if (frontDepth < DEPTHS.length) {
+        const depthCfg = DEPTHS[frontDepth];
         const wallW = depthCfg.right - depthCfg.left;
         if (wallW > 60) {
-          instructions.push({ type: 'torch', depth: d });
+          instructions.push({ type: 'torch', depth: frontDepth });
         }
       }
       continue;
     }
 
     if (fwdCell === 'door') {
-      instructions.push({ type: 'front', depth: d, cellType: 'door' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'door' });
       continue;
     }
 
     if (fwdCell === 'stairs_down') {
-      instructions.push({ type: 'front', depth: d, cellType: 'stairs_down' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'stairs_down' });
     }
     if (fwdCell === 'stairs_up') {
-      instructions.push({ type: 'front', depth: d, cellType: 'stairs_up' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'stairs_up' });
     }
     if (fwdCell === 'chest') {
-      instructions.push({ type: 'front', depth: d, cellType: 'chest' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'chest' });
     }
     if (fwdCell === 'trader') {
-      instructions.push({ type: 'front', depth: d, cellType: 'trader' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'trader' });
     }
     if (fwdCell === 'boss') {
-      instructions.push({ type: 'front', depth: d, cellType: 'boss' });
+      instructions.push({ type: 'front', depth: frontDepth, cellType: 'boss' });
     }
   }
 
