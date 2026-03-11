@@ -19,7 +19,7 @@ import {
 import { turnLeft, turnRight, moveInDirection } from '../utils/direction';
 import { generateSeed } from '../utils/random';
 import { SeededRandom } from '../utils/random';
-import { playFootstep, playChest, playCombatStart, playVictory, playDefeat, playLevelUp } from '../systems/audioEngine';
+import { playFootstep, playChest, playCombatStart, playVictory, playDefeat, playLevelUp, playSwipe, playMagicBoom, startFloorMusic, stopFloorMusic } from '../systems/audioEngine';
 
 const SAVE_KEY = 'dungeon_crawler_saves';
 
@@ -184,7 +184,10 @@ function applyGridChanges(dungeon: DungeonFloor, changes: { x: number; y: number
 
 export const useGameStore = create<GameState>((set, get) => ({
   screen: 'main_menu',
-  setScreen: (screen) => set({ screen }),
+  setScreen: (screen) => {
+    if (screen === 'main_menu' || screen === 'game_over' || screen === 'victory') stopFloorMusic();
+    set({ screen });
+  },
 
   party: [],
   inventory: [],
@@ -254,6 +257,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         defendingIds: new Set(), animating: false,
       },
     });
+    startFloorMusic(get().currentFloor, () => get().currentFloor);
   },
 
   moveForward: () => {
@@ -390,6 +394,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     get().addMessage(`You descend to floor ${nextFloor}...`, 'system');
     const flavor = getDescentFlavor(nextFloor);
     if (flavor) get().addMessage(flavor, 'info');
+    startFloorMusic(nextFloor, () => get().currentFloor);
 
     // Auto-save
     get().saveGame(0);
@@ -608,6 +613,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (combat.selectedAction === 'attack') {
       const monster = newMonsters[targetIndex];
       if (monster && monster.hp > 0) {
+        playSwipe();
         const atk = getEffectiveAttack(char);
         const result = performAttack(
           { attack: atk, name: char.name },
@@ -620,6 +626,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       }
     } else if (combat.selectedAction === 'magic' && combat.selectedSpell) {
+      playMagicBoom();
       const spell = combat.selectedSpell;
       const charRef = newParty.find(c => c.id === char.id)!;
       if (spell.target === 'single_enemy') {
@@ -777,6 +784,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (allDead) {
       get().addMessage('Your party has been wiped out...', 'danger');
       playDefeat();
+      stopFloorMusic();
       setTimeout(() => set({ screen: 'game_over' }), 1500);
       return;
     }
@@ -802,6 +810,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (state.pendingLevelUps.length > 0) {
       set({ screen: 'level_up' });
     } else if (state.bossDefeated) {
+      stopFloorMusic();
       set({ screen: 'victory' });
     }
   },
@@ -1025,6 +1034,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         defendingIds: new Set(), animating: false,
       },
     });
+    startFloorMusic(save.currentFloor, () => get().currentFloor);
   },
 
   getSaveSlots: () => {

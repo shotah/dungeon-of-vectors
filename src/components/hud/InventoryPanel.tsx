@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import type { Character, Item } from '../../types';
@@ -42,6 +42,20 @@ function getItemStatNote(item: Item): string | null {
   return parts.length ? parts.join(' · ') : null;
 }
 
+const TYPE_ORDER: Record<Item['type'], number> = { weapon: 0, armor: 1, accessory: 2, consumable: 3, key: 4 };
+
+function sortInventory(items: Item[], by: 'type' | 'name' | 'value'): Item[] {
+  const copy = [...items];
+  if (by === 'type') {
+    copy.sort((a, b) => TYPE_ORDER[a.type] - TYPE_ORDER[b.type] || a.name.localeCompare(b.name));
+  } else if (by === 'name') {
+    copy.sort((a, b) => a.name.localeCompare(b.name) || TYPE_ORDER[a.type] - TYPE_ORDER[b.type]);
+  } else {
+    copy.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+  }
+  return copy;
+}
+
 export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const party = useGameStore(s => s.party);
   const inventory = useGameStore(s => s.inventory);
@@ -51,8 +65,10 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
   const restWithTent = useGameStore(s => s.restWithTent);
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [sortBy, setSortBy] = useState<'type' | 'name' | 'value'>('type');
   const isMobile = useIsMobile();
   const selectedChar = selectedCharId ? party.find(c => c.id === selectedCharId) ?? null : null;
+  const displayInventory = useMemo(() => sortInventory(inventory, sortBy), [inventory, sortBy]);
 
   const itemImpactLines = (): string[] => {
     if (!selectedItem || !selectedChar) return [];
@@ -236,20 +252,37 @@ export default function InventoryPanel({ onClose }: { onClose: () => void }) {
 
   const itemsSection = (
     <div style={{ flex: 1, minWidth: isMobile ? undefined : 200, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ fontSize: 13, color: '#aaccff', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+      <div style={{ fontSize: 13, color: '#aaccff', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
         {!isMobile && 'Items'}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
           <GoldIcon size={14} /> <span style={{ color: '#daa520', fontSize: 12 }}>{gold}</span>
+        </span>
+        <span style={{ display: 'inline-flex', gap: 4, marginLeft: 'auto' }}>
+          <span style={{ fontSize: 10, color: '#667', alignSelf: 'center' }}>Sort:</span>
+          {(['type', 'name', 'value'] as const).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setSortBy(mode)}
+              style={{
+                fontSize: 10, padding: '2px 6px', border: `1px solid ${sortBy === mode ? '#4a6aaa' : '#3a3a5a'}`,
+                borderRadius: 3, background: sortBy === mode ? '#2a3a5a' : '#1a1a2e', color: sortBy === mode ? '#aaccff' : '#888',
+                cursor: 'pointer', fontFamily: 'monospace',
+              }}
+            >
+              {mode === 'type' ? 'Type' : mode === 'name' ? 'Name' : 'Value'}
+            </button>
+          ))}
         </span>
       </div>
       <div style={{
         overflow: 'auto',
         ...(isMobile ? { flex: 1, minHeight: 0 } : { maxHeight: 300 }),
       }}>
-        {inventory.length === 0 && (
+        {displayInventory.length === 0 && (
           <div style={{ color: '#555', fontSize: 11 }}>Empty</div>
         )}
-        {inventory.map((item, i) => (
+        {displayInventory.map((item, i) => (
           <div
             key={`${item.id}-${i}`}
             onClick={() => setSelectedItem(item)}
