@@ -1,17 +1,18 @@
-import { darkenHex, floorDarkenAmount } from '../../../utils/floorGradient';
+import { darkenHex, floorDarkenAmount, floorRedShift } from '../../../utils/floorGradient';
 
 type WallGradientsProps = { floor?: number };
 
 export default function WallGradients({ floor = 1 }: WallGradientsProps) {
   const t = floorDarkenAmount(floor);
-  const wallTop = darkenHex('#5e5e72', t);
-  const wallBottom = darkenHex('#3a3a50', t);
-  const sideTop = darkenHex('#3a3a4a', t);
-  const sideBottom = darkenHex('#2a2a3a', t);
-  const floorTop = darkenHex('#1a1a2e', t);
-  const floorBottom = darkenHex('#16213e', t);
-  const ceilTop = darkenHex('#1a1a2e', t);
-  const ceilBottom = darkenHex('#0f0f1a', t);
+  const rs = floorRedShift(floor);
+  const wallTop = darkenHex('#5e5e72', t, rs);
+  const wallBottom = darkenHex('#3a3a50', t, rs);
+  const sideTop = darkenHex('#3a3a4a', t, rs);
+  const sideBottom = darkenHex('#2a2a3a', t, rs);
+  const floorTop = darkenHex('#1a1a2e', t, rs);
+  const floorBottom = darkenHex('#16213e', t, rs);
+  const ceilTop = darkenHex('#1a1a2e', t, rs);
+  const ceilBottom = darkenHex('#0f0f1a', t, rs);
 
   return (
     <defs>

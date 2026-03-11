@@ -1,5 +1,5 @@
 import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
-import { darkenHex, floorDarkenAmount } from '../../../utils/floorGradient';
+import { darkenHex, floorDarkenAmount, floorRedShift } from '../../../utils/floorGradient';
 
 const COLS = 8;
 
@@ -28,10 +28,11 @@ export default function FloorAndCeiling({ floor = 1 }: FloorAndCeilingProps) {
   const vanishX = VIEW_WIDTH / 2;
   const vanishY = VIEW_HEIGHT / 2;
   const t = floorDarkenAmount(floor);
-  const tileDark = darkenHex('#171730', t);
-  const tileLight = darkenHex('#1e1e3a', t);
-  const strokeColor = darkenHex('#2e2e48', t);
-  const lineColor = darkenHex('#15152a', t);
+  const rs = floorRedShift(floor);
+  const tileDark = darkenHex('#171730', t, rs);
+  const tileLight = darkenHex('#1e1e3a', t, rs);
+  const strokeColor = darkenHex('#2e2e48', t, rs);
+  const lineColor = darkenHex('#15152a', t, rs);
 
   const floorGrid = buildFloorGrid();
 
