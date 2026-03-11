@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { DIRECTION_DELTAS } from '../../utils/direction';
 import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS, EXTENDED_DEPTH, columnEdgeX } from '../svg/dungeon/dungeonConstants';
@@ -15,6 +15,40 @@ export default function DungeonView() {
   const facing = useGameStore(s => s.facing);
   const currentFloor = useGameStore(s => s.currentFloor);
   const stairsUpPosition = useGameStore(s => s.stairsUpPosition);
+  const [copied, setCopied] = useState(false);
+  const debugTextRef = useRef('');
+  const handleCopyDebug = useCallback(() => {
+    void navigator.clipboard.writeText(debugTextRef.current).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!dungeon) {
+      debugTextRef.current = '';
+      return;
+    }
+    const typeGrid = dungeon.grid.map(row => row.map(cell => cell.type));
+    const { forward, left, right, leftLeft, rightRight } = getViewCells(
+      typeGrid, position.x, position.y, facing,
+      dungeon.width, dungeon.height
+    );
+    const cellLabel = (c: string) => (c === 'wall' ? 'W' : c === 'floor' ? 'F' : c === 'door' ? 'D' : (c?.slice(0, 1) ?? '?').toUpperCase());
+    const maxDepth = left.length - 1;
+    const debugLines = Array.from({ length: maxDepth + 1 }, (_, d) => {
+      const ll = cellLabel(leftLeft[d]);
+      const l = cellLabel(left[d]);
+      const f = d < forward.length ? cellLabel(forward[d]) : '?';
+      const r = cellLabel(right[d]);
+      const rr = cellLabel(rightRight[d]);
+      return `d${d}: LL=${ll} L=${l} F=${f} R=${r} RR=${rr}`;
+    });
+    const fd = DIRECTION_DELTAS[facing];
+    const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
+    const rightCoords = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? `(${position.x + rd.x},${position.y + rd.y})` : `(${position.x + fd.x * i + rd.x},${position.y + fd.y * i + rd.y})`)).join(' ');
+    debugTextRef.current = [...debugLines, `R cells: ${rightCoords(6)}`].join('\n');
+  }, [dungeon, position, facing]);
 
   if (!dungeon) return null;
 
@@ -111,14 +145,6 @@ export default function DungeonView() {
   });
   const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
   const rightCoords = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? `(${position.x + rd.x},${position.y + rd.y})` : `(${position.x + fd.x * i + rd.x},${position.y + fd.y * i + rd.y})`)).join(' ');
-  const debugTextToCopy = [...debugLines, `R cells: ${rightCoords(6)}`].join('\n');
-  const [copied, setCopied] = useState(false);
-  const handleCopyDebug = useCallback(() => {
-    void navigator.clipboard.writeText(debugTextToCopy).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }, [debugTextToCopy]);
 
   return (
     <svg
