@@ -47,15 +47,19 @@ export function getViewCells(
 }
 
 export interface WallInstruction {
-  type: 'left' | 'right' | 'front' | 'torch' | 'left_cross' | 'right_cross';
+  type: 'front' | 'torch' | 'column_wall' | 'column_side';
   depth: number;
   cellType?: CellType;
+  column?: number;
+  edge?: number;
 }
 
 export function buildWallInstructions(
   forward: CellType[],
   left: CellType[],
-  right: CellType[]
+  right: CellType[],
+  leftLeft?: CellType[],
+  rightRight?: CellType[]
 ): WallInstruction[] {
   const instructions: WallInstruction[] = [];
 
@@ -69,33 +73,37 @@ export function buildWallInstructions(
 
   const maxDepth = forward.length - 1;
   for (let d = maxDepth; d >= 0; d--) {
-    if (isBlockingSide(left[d])) {
-      const hasFarCrossL = d < maxDepth && !isBlockingSide(left[d + 1]);
-      if (hasFarCrossL) {
-        instructions.push({ type: 'left_cross', depth: d + 1 });
-      }
-      if (d > 0 && !isBlockingSide(left[d - 1])) {
-        instructions.push({ type: 'left_cross', depth: d });
-      }
+    const sideEdges = new Set<number>();
+    const columnWalls: number[] = [];
+
+    if (leftLeft && d < leftLeft.length && isBlockingSide(leftLeft[d])) {
+      columnWalls.push(0);
+      sideEdges.add(0);
+      sideEdges.add(1);
     }
-    // Strip at depth d shows the cell at the far end of the segment (left[d+1]); skip at d===0 when left[0] is floor so passage visible
-    const leftStripAtD = d < maxDepth ? isBlockingSide(left[d + 1]) : isBlockingSide(left[d]);
-    if (leftStripAtD && (d > 0 || isBlockingSide(left[0]))) {
-      instructions.push({ type: 'left', depth: d });
+    if (d < left.length && isBlockingSide(left[d])) {
+      columnWalls.push(1);
+      sideEdges.add(1);
+      sideEdges.add(2);
     }
-    if (isBlockingSide(right[d])) {
-      const hasFarCrossR = d < maxDepth && !isBlockingSide(right[d + 1]);
-      if (hasFarCrossR) {
-        instructions.push({ type: 'right_cross', depth: d + 1 });
-      }
-      if (d > 0 && !isBlockingSide(right[d - 1])) {
-        instructions.push({ type: 'right_cross', depth: d });
-      }
+    if (d < right.length && isBlockingSide(right[d])) {
+      columnWalls.push(3);
+      sideEdges.add(3);
+      sideEdges.add(4);
     }
-    // Strip at depth d shows the cell at the far end of the segment (right[d+1]); skip at d===0 when right[0] is floor so passage visible
-    const rightStripAtD = d < maxDepth ? isBlockingSide(right[d + 1]) : isBlockingSide(right[d]);
-    if (rightStripAtD && (d > 0 || isBlockingSide(right[0]))) {
-      instructions.push({ type: 'right', depth: d });
+    if (rightRight && d < rightRight.length && isBlockingSide(rightRight[d])) {
+      columnWalls.push(4);
+      sideEdges.add(4);
+      sideEdges.add(5);
+    }
+
+    // Side strips first (render behind column walls)
+    for (const edge of sideEdges) {
+      instructions.push({ type: 'column_side', depth: d, edge });
+    }
+    // Column walls on top of side strips
+    for (const col of columnWalls) {
+      instructions.push({ type: 'column_wall', depth: d, column: col });
     }
 
     if (nearestBlocker >= 0 && d > nearestBlocker) continue;

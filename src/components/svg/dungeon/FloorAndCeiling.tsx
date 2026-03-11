@@ -1,7 +1,8 @@
 import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
 import { darkenHex, floorDarkenAmount, floorRedShift } from '../../../utils/floorGradient';
+import type { CellType } from '../../../types';
 
-const COLS = 8;
+const COLS = 5;
 
 function buildFloorGrid() {
   const vanishX = VIEW_WIDTH / 2;
@@ -14,7 +15,7 @@ function buildFloorGrid() {
     const t = (y - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
     const row: { x: number; y: number }[] = [];
     for (let c = 0; c <= COLS; c++) {
-      const startX = (c * VIEW_WIDTH) / COLS;
+      const startX = (c / COLS) * VIEW_WIDTH;
       row.push({ x: startX + (vanishX - startX) * t, y });
     }
     grid.push(row);
@@ -22,9 +23,29 @@ function buildFloorGrid() {
   return grid;
 }
 
-type FloorAndCeilingProps = { floor?: number };
+type ViewCells = {
+  forward: CellType[];
+  left: CellType[];
+  right: CellType[];
+  leftLeft: CellType[];
+  rightRight: CellType[];
+};
 
-export default function FloorAndCeiling({ floor = 1 }: FloorAndCeilingProps) {
+type FloorAndCeilingProps = { floor?: number; viewCells?: ViewCells };
+
+function getCellForTile(d: number, c: number, viewCells?: ViewCells): CellType {
+  if (!viewCells) return 'floor';
+  switch (c) {
+    case 0: return viewCells.leftLeft[d] ?? 'wall';
+    case 1: return viewCells.left[d] ?? 'wall';
+    case 2: return d === 0 ? 'floor' : (viewCells.forward[d - 1] ?? 'wall');
+    case 3: return viewCells.right[d] ?? 'wall';
+    case 4: return viewCells.rightRight[d] ?? 'wall';
+    default: return 'wall';
+  }
+}
+
+export default function FloorAndCeiling({ floor = 1, viewCells }: FloorAndCeilingProps) {
   const vanishX = VIEW_WIDTH / 2;
   const vanishY = VIEW_HEIGHT / 2;
   const t = floorDarkenAmount(floor);
@@ -46,36 +67,61 @@ export default function FloorAndCeiling({ floor = 1 }: FloorAndCeilingProps) {
         const nextRow = floorGrid[d + 1];
         const opacity = Math.max(0.15, 0.55 - d * 0.06);
         return Array.from({ length: COLS }, (_, c) => {
+          const cell = getCellForTile(d, c, viewCells);
+          if (cell === 'wall') return null;
+
           const tl = row[c], tr = row[c + 1];
           const bl = nextRow[c], br = nextRow[c + 1];
           const dark = (d + c) % 2 === 0;
+          const cx = (tl.x + tr.x + br.x + bl.x) / 4;
+          const cy = (tl.y + tr.y + br.y + bl.y) / 4;
           return (
-            <polygon
-              key={`ft-${d}-${c}`}
-              points={`${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`}
-              fill={dark ? tileDark : tileLight}
-              stroke={strokeColor}
-              strokeWidth={d < 3 ? 0.8 : 0.4}
-              opacity={opacity}
-            />
+            <g key={`ft-${d}-${c}`}>
+              <polygon
+                points={`${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`}
+                fill={dark ? tileDark : tileLight}
+                stroke={strokeColor}
+                strokeWidth={d < 3 ? 0.8 : 0.4}
+                opacity={opacity}
+              />
+              {import.meta.env.DEV && (
+                <text
+                  x={cx}
+                  y={cy}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={d < 4 ? 10 : 8}
+                  fill="#446"
+                  fontFamily="monospace"
+                  opacity={0.9}
+                >
+                  {d}
+                </text>
+              )}
+            </g>
           );
         });
       })}
 
-      {[1, 2, 3, 4, 5, 6, 7].map(i => (
+      {Array.from({ length: COLS - 1 }, (_, i) => i + 1).map(i => (
         <line key={`cv-${i}`}
-          x1={(i * VIEW_WIDTH) / 8} y1={0}
+          x1={(i * VIEW_WIDTH) / COLS} y1={0}
           x2={vanishX} y2={vanishY}
           stroke={lineColor} strokeWidth="0.5" opacity="0.2"
         />
       ))}
-      {DEPTHS.slice(1).map((d, i) => (
-        <line key={`ch-${i}`}
-          x1={d.left} y1={d.top} x2={d.right} y2={d.top}
-          stroke={lineColor} strokeWidth="0.5"
-          opacity={Math.max(0.08, 0.25 - i * 0.04)}
-        />
-      ))}
+      {DEPTHS.slice(1).map((d, i) => {
+        const tileW = d.right - d.left;
+        const fullLeft = Math.max(0, d.left - 2 * tileW);
+        const fullRight = Math.min(VIEW_WIDTH, d.right + 2 * tileW);
+        return (
+          <line key={`ch-${i}`}
+            x1={fullLeft} y1={d.top} x2={fullRight} y2={d.top}
+            stroke={lineColor} strokeWidth="0.5"
+            opacity={Math.max(0.08, 0.25 - i * 0.04)}
+          />
+        );
+      })}
     </g>
   );
 }

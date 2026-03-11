@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { DIRECTION_DELTAS } from '../../utils/direction';
-import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS } from '../svg/dungeon/dungeonConstants';
+import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS, EXTENDED_DEPTH, columnEdgeX } from '../svg/dungeon/dungeonConstants';
 import WallGradients from '../svg/dungeon/WallGradients';
-import { SideWall, FrontWall } from '../svg/dungeon/WallPanels';
+import { FrontWall } from '../svg/dungeon/WallPanels';
 import TorchSconce from '../svg/dungeon/TorchSconce';
 import FloorAndCeiling from '../svg/dungeon/FloorAndCeiling';
 import { getViewCells, buildWallInstructions, getPrompt } from './dungeonViewUtils';
@@ -26,23 +26,51 @@ export default function DungeonView() {
     dungeon.width, dungeon.height
   );
 
-  const instructions = buildWallInstructions(forward, left, right);
+  const instructions = buildWallInstructions(forward, left, right, leftLeft, rightRight);
 
   const wallElements: React.ReactElement[] = [];
   for (const inst of instructions) {
     switch (inst.type) {
-      case 'left':
-        wallElements.push(<SideWall key={`lw-${inst.depth}`} depth={inst.depth} side="left" />);
+      case 'column_side': {
+        const edge = inst.edge!;
+        const curr = DEPTHS[inst.depth];
+        const next = inst.depth < DEPTHS.length - 1 ? DEPTHS[inst.depth + 1] : EXTENDED_DEPTH;
+        if (curr && next) {
+          const x1 = columnEdgeX(edge, curr.bottom);
+          const x2 = columnEdgeX(edge, next.bottom);
+          wallElements.push(
+            <polygon
+              key={`cs-${inst.depth}-${edge}`}
+              points={`${x1},${curr.top} ${x2},${next.top} ${x2},${next.bottom} ${x1},${curr.bottom}`}
+              fill="url(#sideWallGrad)"
+              stroke="#222233"
+              strokeWidth="1"
+            />
+          );
+        }
         break;
-      case 'right':
-        wallElements.push(<SideWall key={`rw-${inst.depth}`} depth={inst.depth} side="right" />);
+      }
+      case 'column_wall': {
+        const col = inst.column!;
+        const depthCfg = DEPTHS[inst.depth];
+        if (depthCfg) {
+          const colLeft = columnEdgeX(col, depthCfg.bottom);
+          const colRight = columnEdgeX(col + 1, depthCfg.bottom);
+          wallElements.push(
+            <rect
+              key={`cw-${inst.depth}-${col}`}
+              x={colLeft}
+              y={depthCfg.top}
+              width={colRight - colLeft}
+              height={depthCfg.bottom - depthCfg.top}
+              fill="url(#wallGrad)"
+              stroke="#222233"
+              strokeWidth="1"
+            />
+          );
+        }
         break;
-      case 'left_cross':
-        wallElements.push(<FrontWall key={`lcw-${inst.depth}`} depth={inst.depth} side="left" />);
-        break;
-      case 'right_cross':
-        wallElements.push(<FrontWall key={`rcw-${inst.depth}`} depth={inst.depth} side="right" />);
-        break;
+      }
       case 'front':
         wallElements.push(<FrontWall key={`fw-${inst.depth}`} depth={inst.depth} cellType={inst.cellType!} />);
         break;
@@ -100,7 +128,7 @@ export default function DungeonView() {
       style={{ background: getDungeonViewBackground(currentFloor), borderRadius: 8, border: '2px solid #333' }}
     >
       <WallGradients floor={currentFloor} />
-      <FloorAndCeiling floor={currentFloor} />
+      <FloorAndCeiling floor={currentFloor} viewCells={{ forward, left, right, leftLeft, rightRight }} />
       {wallElements}
       {prompt && (
         <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT - 15} textAnchor="middle" fill={prompt.color} fontSize="14" fontFamily="monospace">
