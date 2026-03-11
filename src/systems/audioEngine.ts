@@ -1,4 +1,12 @@
 let audioCtx: AudioContext | null = null;
+let _musicEnabled = true;
+
+export function isMusicEnabled(): boolean { return _musicEnabled; }
+
+export function setMusicEnabled(enabled: boolean) {
+  _musicEnabled = enabled;
+  if (!enabled) stopFloorMusic();
+}
 
 function getContext(): AudioContext {
   if (!audioCtx) {
@@ -226,6 +234,7 @@ function scheduleNextMusicNote() {
  */
 export function startFloorMusic(floor?: number, getCurrentFloor?: () => number) {
   stopFloorMusic();
+  if (!_musicEnabled) return;
   try {
     getContext();
     musicGetCurrentFloor = getCurrentFloor ?? null;

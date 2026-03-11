@@ -6,7 +6,7 @@ import type {
 } from '../types';
 import { CLASS_DEFINITIONS, calculateXpToNext, HP_PER_VIT, MP_PER_INT, STR_PER_PT, AGI_PER_PT } from '../data/classes';
 import { generateDungeon, getStartPosition, getStairsDownPosition } from '../systems/dungeonGenerator';
-import { getMonstersForFloor, spawnMonster, getMonsterTemplate } from '../data/monsters';
+import { getMonstersForFloor, spawnMonster, getMonsterTemplate, getGuardianForFloor, isGuardianId } from '../data/monsters';
 import { getChestLoot, getChestGold, rollLoot } from '../systems/lootTable';
 import { getBuyPrice, getSellPrice } from '../data/trader';
 import { getItem, canEquipItem } from '../data/items';
@@ -43,6 +43,7 @@ interface GameState {
   stairsUpPosition: Position | null;
   exploredMaps: Record<number, boolean[][]>;
   gridChanges: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
+  guardiansDefeated: Record<number, boolean>;
 
   // Combat
   combat: {
@@ -209,6 +210,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   stairsUpPosition: null,
   exploredMaps: {},
   gridChanges: {},
+  guardiansDefeated: {},
 
   combat: {
     active: false, monsters: [], turnOrder: [], currentTurn: 0,
@@ -253,6 +255,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       facing: 'N',
       exploredMaps: explored,
       gridChanges: {},
+      guardiansDefeated: {},
       stairsUpPosition: null,
       pendingLevelUps: [],
       bossDefeated: false,
@@ -542,23 +545,29 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startBossFight: () => {
-    const { currentFloor, party } = get();
-    const template = getMonsterTemplate('mad_wizard');
+    const { currentFloor, maxFloor, party } = get();
+    const isFinalBoss = currentFloor >= maxFloor;
+    const template = isFinalBoss
+      ? getMonsterTemplate('mad_wizard')
+      : getGuardianForFloor(currentFloor);
     if (!template) return;
     const boss = spawnMonster(template, currentFloor);
     const turnOrder = buildTurnOrder(party, [boss]);
+    const introLine = isFinalBoss
+      ? 'The Mad Wizard cackles with fury!'
+      : `${template.name} blocks the way forward!`;
 
     set({
       combat: {
         active: true, monsters: [boss], turnOrder, currentTurn: -1,
-        log: ['The Mad Wizard cackles with fury!'],
+        log: [introLine],
         victory: false, defeat: false,
         selectedAction: null, selectedSpell: null, selectedAbility: null, selectedItem: null,
         targetingMode: null, barrierActive: false,
         defendingIds: new Set(), animating: false,
       },
     });
-    get().addMessage('The Mad Wizard attacks!', 'combat');
+    get().addMessage(`${template.name} attacks!`, 'combat');
     playCombatStart();
     setTimeout(() => get().advanceTurn(), 300);
   },
@@ -760,6 +769,20 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       if (newMonsters.some(m => m.id === 'mad_wizard')) {
         set({ bossDefeated: true });
+      }
+      const defeatedGuardian = newMonsters.find(m => isGuardianId(m.id));
+      if (defeatedGuardian) {
+        const floor = state.currentFloor;
+        const dungeon = state.dungeon;
+        if (dungeon) {
+          const bossPos = getStairsDownPosition(dungeon);
+          dungeon.grid[bossPos.y][bossPos.x].type = 'stairs_down';
+          const floorChanges = [...(state.gridChanges[floor] || []), { x: bossPos.x, y: bossPos.y, type: 'stairs_down' as const }];
+          set({
+            guardiansDefeated: { ...state.guardiansDefeated, [floor]: true },
+            gridChanges: { ...state.gridChanges, [floor]: floorChanges },
+          });
+        }
       }
       return;
     }
@@ -1034,6 +1057,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       facing: state.facing,
       exploredMaps: state.exploredMaps,
       gridChanges: state.gridChanges,
+      guardiansDefeated: state.guardiansDefeated,
       playtime: state.playtime + elapsed,
       timestamp: Date.now(),
     };
@@ -1052,6 +1076,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const loadedMaxFloor = save.maxFloor || 10;
     const loadedGridChanges = save.gridChanges || {};
+    const loadedGuardiansDefeated = save.guardiansDefeated || {};
     const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor, loadedMaxFloor);
     if (loadedGridChanges[save.currentFloor]) {
       applyGridChanges(dungeon, loadedGridChanges[save.currentFloor]);
@@ -1066,6 +1091,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       maxFloor: loadedMaxFloor,
       dungeon,
       gridChanges: loadedGridChanges,
+      guardiansDefeated: loadedGuardiansDefeated,
       position: save.position,
       facing: save.facing,
       stairsUpPosition: stairsUp,

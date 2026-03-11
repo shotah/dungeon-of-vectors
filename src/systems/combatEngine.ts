@@ -1,6 +1,7 @@
 import type { Character, Monster, CombatEntity, Spell, Item, Ability } from '../types';
 import { rollDice } from '../utils/random';
 import { isDaggerWeapon } from '../data/items';
+import { isGuardianId } from '../data/monsters';
 
 export function buildTurnOrder(party: Character[], monsters: Monster[]): CombatEntity[] {
   const entities: CombatEntity[] = [
@@ -130,7 +131,7 @@ export function performSteal(rogue: Character, monster: Monster): { gold: number
 
 export function performAssassinate(rogue: Character, monster: Monster): { killed: boolean; damageTaken: number; damageDealt: number; log: string } {
   const withDagger = isDaggerWeapon(rogue.equipment.weapon);
-  const isBoss = monster.id === 'mad_wizard';
+  const isBoss = monster.id === 'mad_wizard' || isGuardianId(monster.id);
   if (isBoss) {
     const recoilMult = withDagger ? 0.3 : 0.4;
     const recoil = Math.max(1, Math.floor(monster.attack * recoilMult));
@@ -140,7 +141,7 @@ export function performAssassinate(rogue: Character, monster: Monster): { killed
     monster.hp = Math.max(0, monster.hp - nick);
     return {
       killed: false, damageTaken: recoil, damageDealt: nick,
-      log: `${rogue.name} attempts to assassinate ${monster.name}... The Wizard shrugs it off! ${rogue.name} takes ${recoil} recoil damage, nicks for ${nick}.`,
+      log: `${rogue.name} attempts to assassinate ${monster.name}... ${monster.name} shrugs it off! ${rogue.name} takes ${recoil} recoil damage, nicks for ${nick}.`,
     };
   }
 

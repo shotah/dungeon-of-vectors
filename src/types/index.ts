@@ -172,6 +172,7 @@ export interface GameSave {
   playtime: number;
   timestamp: number;
   gridChanges?: Record<number, { x: number; y: number; type: DungeonCell['type'] }[]>;
+  guardiansDefeated?: Record<number, boolean>;
 }
 
 export interface PendingLevelUp {

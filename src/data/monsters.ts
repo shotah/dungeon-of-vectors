@@ -92,6 +92,54 @@ const MONSTER_TEMPLATES: MonsterTemplate[] = [
   },
 ];
 
+const GUARDIAN_TEMPLATES: MonsterTemplate[] = [
+  {
+    id: 'guardian_floor_1', name: 'Rat King', maxHp: 40, attack: 8, defense: 4, speed: 11,
+    xpReward: 50, goldReward: 30, minFloor: 999, svgComponent: 'RatKingSVG',
+    lootTable: [{ itemId: 'health_potion_small', chance: 1.0 }, { itemId: 'dagger', chance: 0.3 }],
+  },
+  {
+    id: 'guardian_floor_2', name: 'Goblin Warchief', maxHp: 60, attack: 12, defense: 6, speed: 13,
+    xpReward: 80, goldReward: 50, minFloor: 999, svgComponent: 'GoblinWarchiefSVG',
+    lootTable: [{ itemId: 'health_potion', chance: 1.0 }, { itemId: 'iron_sword', chance: 0.25 }, { itemId: 'short_bow', chance: 0.15 }],
+  },
+  {
+    id: 'guardian_floor_3', name: 'Spider Queen', maxHp: 90, attack: 16, defense: 8, speed: 12,
+    xpReward: 120, goldReward: 70, minFloor: 999, svgComponent: 'SpiderQueenSVG',
+    lootTable: [{ itemId: 'health_potion', chance: 1.0 }, { itemId: 'mana_potion', chance: 0.5 }, { itemId: 'arcane_ring', chance: 0.15 }],
+  },
+  {
+    id: 'guardian_floor_4', name: 'Shadow Wraith', maxHp: 120, attack: 22, defense: 6, speed: 15,
+    xpReward: 180, goldReward: 100, minFloor: 999, svgComponent: 'ShadowWraithSVG',
+    lootTable: [{ itemId: 'health_potion', chance: 1.0 }, { itemId: 'mana_potion', chance: 0.6 }, { itemId: 'silver_ring', chance: 0.2 }, { itemId: 'shadow_pin', chance: 0.15 }],
+  },
+  {
+    id: 'guardian_floor_5', name: 'Troll Warlord', maxHp: 160, attack: 24, defense: 16, speed: 7,
+    xpReward: 250, goldReward: 130, minFloor: 999, svgComponent: 'TrollWarlordSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'iron_sword', chance: 0.3 }, { itemId: 'iron_armor', chance: 0.2 }, { itemId: 'berserker_ring', chance: 0.15 }],
+  },
+  {
+    id: 'guardian_floor_6', name: 'Bone Lord', maxHp: 200, attack: 28, defense: 18, speed: 9,
+    xpReward: 350, goldReward: 160, minFloor: 999, svgComponent: 'BoneLordSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'dragon_shield', chance: 0.15 }, { itemId: 'ward_amulet', chance: 0.2 }, { itemId: 'holy_scepter', chance: 0.1 }],
+  },
+  {
+    id: 'guardian_floor_7', name: 'Demon Prince', maxHp: 250, attack: 34, defense: 20, speed: 12,
+    xpReward: 500, goldReward: 200, minFloor: 999, svgComponent: 'DemonPrinceSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'demon_blade', chance: 0.2 }, { itemId: 'demon_amulet', chance: 0.15 }, { itemId: 'revive_potion', chance: 0.2 }],
+  },
+  {
+    id: 'guardian_floor_8', name: 'Dragon Matriarch', maxHp: 310, attack: 38, defense: 24, speed: 11,
+    xpReward: 700, goldReward: 300, minFloor: 999, svgComponent: 'DragonMatriarchSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'dragon_sword', chance: 0.25 }, { itemId: 'elder_dragon_shield', chance: 0.15 }, { itemId: 'revive_potion', chance: 0.25 }, { itemId: 'phoenix_feather', chance: 0.2 }],
+  },
+  {
+    id: 'guardian_floor_9', name: 'Lich Overlord', maxHp: 370, attack: 42, defense: 18, speed: 13,
+    xpReward: 1200, goldReward: 500, minFloor: 999, svgComponent: 'LichOverlordSVG',
+    lootTable: [{ itemId: 'health_potion_large', chance: 1.0 }, { itemId: 'lich_staff', chance: 0.2 }, { itemId: 'lich_phylactery', chance: 0.15 }, { itemId: 'revive_potion', chance: 0.3 }, { itemId: 'divine_scepter', chance: 0.12 }],
+  },
+];
+
 /** How many floors back we still allow monsters (e.g. 2 = floor 7 can show minFloor 5, 6, 7). */
 const FLOOR_RANGE = 2;
 
@@ -117,5 +165,13 @@ export function spawnMonster(template: MonsterTemplate, floorScale = 1): Monster
 }
 
 export function getMonsterTemplate(id: string): MonsterTemplate | undefined {
-  return MONSTER_TEMPLATES.find(m => m.id === id);
+  return MONSTER_TEMPLATES.find(m => m.id === id) || GUARDIAN_TEMPLATES.find(m => m.id === id);
+}
+
+export function getGuardianForFloor(floor: number): MonsterTemplate | undefined {
+  return GUARDIAN_TEMPLATES.find(m => m.id === `guardian_floor_${floor}`);
+}
+
+export function isGuardianId(id: string): boolean {
+  return id.startsWith('guardian_floor_');
 }

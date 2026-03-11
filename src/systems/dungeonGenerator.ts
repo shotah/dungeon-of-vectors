@@ -135,7 +135,7 @@ function placeEncounters(grid: DungeonCell[][], rng: SeededRandom, encounterRate
   }
 }
 
-export function generateDungeon(seed: number, floor: number, maxFloor?: number): DungeonFloor {
+export function generateDungeon(seed: number, floor: number, _maxFloor?: number): DungeonFloor {
   const rng = new SeededRandom(seed + floor * 7919);
   const baseSize = 20;
   const width = baseSize + floor * 4;
@@ -179,10 +179,9 @@ export function generateDungeon(seed: number, floor: number, maxFloor?: number):
   const startPos = roomCenter(rooms[0]);
   grid[startPos.y][startPos.x].type = floor === 1 ? 'start' : 'stairs_up';
 
-  // Place stairs down (or boss on final floor) in last room
+  // Place boss guardian (or final boss) in last room; gridChanges converts to stairs_down once defeated
   const stairsPos = roomCenter(rooms[rooms.length - 1]);
-  const isFinalFloor = maxFloor != null && floor >= maxFloor;
-  grid[stairsPos.y][stairsPos.x].type = isFinalFloor ? 'boss' : 'stairs_down';
+  grid[stairsPos.y][stairsPos.x].type = 'boss';
 
   // Place doors only in proper doorways (floor tile flanked by walls on two opposite sides)
   for (const room of rooms) {
@@ -270,9 +269,8 @@ export function getStartPosition(dungeon: DungeonFloor): Position {
 export function getStairsDownPosition(dungeon: DungeonFloor): Position {
   for (let y = 0; y < dungeon.height; y++) {
     for (let x = 0; x < dungeon.width; x++) {
-      if (dungeon.grid[y][x].type === 'stairs_down') {
-        return { x, y };
-      }
+      const t = dungeon.grid[y][x].type;
+      if (t === 'stairs_down' || t === 'boss') return { x, y };
     }
   }
   return getStartPosition(dungeon);

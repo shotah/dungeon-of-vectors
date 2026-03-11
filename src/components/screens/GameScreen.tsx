@@ -9,16 +9,26 @@ import MessageLog from '../hud/MessageLog';
 import Button from '../ui/Button';
 import RestingScene from '../svg/screens/RestingScene';
 import { getGameBackground } from '../../utils/floorGradient';
+import { isMusicEnabled, setMusicEnabled, startFloorMusic } from '../../systems/audioEngine';
 
 const CombatScreen = lazy(() => import('../combat/CombatScreen'));
 const InventoryPanel = lazy(() => import('../hud/InventoryPanel'));
 const TraderPanel = lazy(() => import('../hud/TraderPanel'));
 
-function SaveLoadPanel({ onClose }: { onClose: () => void }) {
+function SettingsPanel({ onClose }: { onClose: () => void }) {
+  const [musicOn, setMusicOn] = useState(isMusicEnabled());
+  const currentFloor = useGameStore(s => s.currentFloor);
   const saveGame = useGameStore(s => s.saveGame);
   const loadGame = useGameStore(s => s.loadGame);
   const deleteSave = useGameStore(s => s.deleteSave);
   const slots = useGameStore(s => s.getSaveSlots)();
+
+  const toggleMusic = () => {
+    const next = !musicOn;
+    setMusicOn(next);
+    setMusicEnabled(next);
+    if (next) startFloorMusic(currentFloor, () => useGameStore.getState().currentFloor);
+  };
 
   return (
     <div style={{
@@ -32,7 +42,19 @@ function SaveLoadPanel({ onClose }: { onClose: () => void }) {
         }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ fontSize: 16, color: '#aaccff', marginBottom: 16 }}>Load / Manage Saves</div>
+        <div style={{ fontSize: 16, color: '#aaccff', marginBottom: 16 }}>Settings</div>
+
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 8, background: '#0f0f1a', borderRadius: 4, marginBottom: 12,
+        }}>
+          <span style={{ fontSize: 13 }}>Music</span>
+          <Button size="sm" variant={musicOn ? 'secondary' : 'danger'} onClick={toggleMusic}>
+            {musicOn ? 'On' : 'Off'}
+          </Button>
+        </div>
+
+        <div style={{ fontSize: 14, color: '#aaccff', marginBottom: 8 }}>Save Slots</div>
         {slots.map(slot => (
           <div key={slot.id} style={{
             display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
@@ -57,6 +79,7 @@ function SaveLoadPanel({ onClose }: { onClose: () => void }) {
             )}
           </div>
         ))}
+
         <div style={{ textAlign: 'center', marginTop: 12 }}>
           <Button variant="secondary" onClick={onClose}>Close (Esc)</Button>
         </div>
@@ -102,7 +125,7 @@ export default function GameScreen() {
   const saveGame = useGameStore(s => s.saveGame);
 
   const [showInventory, setShowInventory] = useState(false);
-  const [showSaveLoad, setShowSaveLoad] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'party'>('map');
 
@@ -117,7 +140,7 @@ export default function GameScreen() {
         return;
       }
       setShowInventory(false);
-      setShowSaveLoad(false);
+      setShowSettings(false);
       setShowStartOver(false);
       setShowTrader(false);
       return;
@@ -127,11 +150,11 @@ export default function GameScreen() {
       dismissDescentFlavor();
       return;
     }
-    if (combat.active || showInventory || showSaveLoad || showStartOver || showTrader || resting) return;
+    if (combat.active || showInventory || showSettings || showStartOver || showTrader || resting) return;
 
     switch (e.key) {
       case 'F5': e.preventDefault(); handleQuickSave(); break;
-      case 'F9': e.preventDefault(); setShowSaveLoad(true); break;
+      case 'F9': e.preventDefault(); setShowSettings(true); break;
       default:
         switch (e.key.toLowerCase()) {
           case 'w': case 'arrowup': moveForward(); break;
@@ -142,7 +165,7 @@ export default function GameScreen() {
           case 'i': setShowInventory(true); break;
         }
     }
-  }, [descentFlavorPopup, dismissDescentFlavor, combat.active, showInventory, showSaveLoad, showStartOver, showTrader, resting, setShowTrader, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, interact, handleQuickSave]);
+  }, [descentFlavorPopup, dismissDescentFlavor, combat.active, showInventory, showSettings, showStartOver, showTrader, resting, setShowTrader, moveForward, moveBackward, turnPlayerLeft, turnPlayerRight, interact, handleQuickSave]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -231,8 +254,8 @@ export default function GameScreen() {
               style={{ width: '100%' }}>Inventory (I)</Button>
             <div style={{ display: 'flex', gap: 4 }}>
               <Button size="sm" onClick={handleQuickSave} style={{ flex: 1 }}>Save</Button>
-              <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}
-                style={{ flex: 1 }}>Load</Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowSettings(true)}
+                style={{ flex: 1 }}>Settings</Button>
             </div>
             <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
               style={{ width: '100%' }}>Start Over</Button>
@@ -260,8 +283,8 @@ export default function GameScreen() {
                 style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>📦</Button>
               <Button size="sm" onClick={handleQuickSave}
                 style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>💾</Button>
-              <Button size="sm" variant="secondary" onClick={() => setShowSaveLoad(true)}
-                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>📂</Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowSettings(true)}
+                style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>⚙</Button>
               <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
                 style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>✕</Button>
             </div>
@@ -357,7 +380,7 @@ export default function GameScreen() {
         {showInventory && <InventoryPanel onClose={() => setShowInventory(false)} />}
         {showTrader && <TraderPanel onClose={() => setShowTrader(false)} />}
       </Suspense>
-      {showSaveLoad && <SaveLoadPanel onClose={() => setShowSaveLoad(false)} />}
+      {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
 
       {resting && (
         <div style={{
