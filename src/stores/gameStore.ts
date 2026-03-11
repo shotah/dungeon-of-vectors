@@ -237,7 +237,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   initNewGame: (partySetup, maxFloor) => {
     const seed = generateSeed();
-    const dungeon = generateDungeon(seed, 1, maxFloor);
+    const dungeon = generateDungeon(seed, 1);
     const startPos = getStartPosition(dungeon);
     const explored = { 1: createExploredMap(dungeon.width, dungeon.height) };
     exploreAround(explored[1], startPos.x, startPos.y, dungeon.width, dungeon.height);
@@ -389,12 +389,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   goDownstairs: () => {
-    const { dungeon, position, dungeonSeed, currentFloor, maxFloor, exploredMaps } = get();
+    const { dungeon, position, dungeonSeed, currentFloor, exploredMaps } = get();
     if (!dungeon) return;
     if (dungeon.grid[position.y][position.x].type !== 'stairs_down') return;
 
     const nextFloor = currentFloor + 1;
-    const newDungeon = generateDungeon(dungeonSeed, nextFloor, maxFloor);
+    const newDungeon = generateDungeon(dungeonSeed, nextFloor);
     const startPos = getStartPosition(newDungeon);
     const map = exploredMaps[nextFloor] || createExploredMap(newDungeon.width, newDungeon.height);
     exploreAround(map, startPos.x, startPos.y, newDungeon.width, newDungeon.height);
@@ -421,13 +421,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   goUpstairs: () => {
-    const { dungeon, dungeonSeed, currentFloor, maxFloor, exploredMaps, gridChanges } = get();
+    const { dungeon, dungeonSeed, currentFloor, exploredMaps, gridChanges } = get();
     if (!dungeon || currentFloor <= 1) return;
     const { position, stairsUpPosition } = get();
     if (!stairsUpPosition || position.x !== stairsUpPosition.x || position.y !== stairsUpPosition.y) return;
 
     const prevFloor = currentFloor - 1;
-    const prevDungeon = generateDungeon(dungeonSeed, prevFloor, maxFloor);
+    const prevDungeon = generateDungeon(dungeonSeed, prevFloor);
     if (gridChanges[prevFloor]?.length) {
       applyGridChanges(prevDungeon, gridChanges[prevFloor]);
     }
@@ -1077,7 +1077,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const loadedMaxFloor = save.maxFloor || 10;
     const loadedGridChanges = save.gridChanges || {};
     const loadedGuardiansDefeated = save.guardiansDefeated || {};
-    const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor, loadedMaxFloor);
+    const dungeon = generateDungeon(save.dungeonSeed, save.currentFloor);
     if (loadedGridChanges[save.currentFloor]) {
       applyGridChanges(dungeon, loadedGridChanges[save.currentFloor]);
     }

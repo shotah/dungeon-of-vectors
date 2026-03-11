@@ -135,7 +135,7 @@ function placeEncounters(grid: DungeonCell[][], rng: SeededRandom, encounterRate
   }
 }
 
-export function generateDungeon(seed: number, floor: number, _maxFloor?: number): DungeonFloor {
+export function generateDungeon(seed: number, floor: number): DungeonFloor {
   const rng = new SeededRandom(seed + floor * 7919);
   const baseSize = 20;
   const width = baseSize + floor * 4;
