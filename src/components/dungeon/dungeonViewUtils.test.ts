@@ -119,6 +119,12 @@ describe('getViewCells', () => {
       const result = getViewCells(grid, 5, 5, 'N', W, H);
       expect(result.right).toHaveLength(DEPTHS.length);
     });
+
+    it('leftLeft and rightRight have viewDepth+1 elements (same as left/right)', () => {
+      const result = getViewCells(grid, 5, 5, 'N', W, H);
+      expect(result.leftLeft).toHaveLength(DEPTHS.length);
+      expect(result.rightRight).toHaveLength(DEPTHS.length);
+    });
   });
 
   describe('facing North from (5,5)', () => {
@@ -146,6 +152,14 @@ describe('getViewCells', () => {
 
     it('right[1] is east of 1-ahead (6,4)', () => {
       expect(result.right[1]).toBe(getCellAt(grid, 6, 4, W, H));
+    });
+
+    it('leftLeft[0] is two cells west of player (3,5)', () => {
+      expect(result.leftLeft[0]).toBe(getCellAt(grid, 3, 5, W, H));
+    });
+
+    it('rightRight[0] is two cells east of player (7,5)', () => {
+      expect(result.rightRight[0]).toBe(getCellAt(grid, 7, 5, W, H));
     });
   });
 

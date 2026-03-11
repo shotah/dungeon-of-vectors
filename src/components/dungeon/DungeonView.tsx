@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { DIRECTION_DELTAS } from '../../utils/direction';
 import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS } from '../svg/dungeon/dungeonConstants';
@@ -21,7 +21,7 @@ export default function DungeonView() {
   const isOnStairsUp = currentFloor > 1 && !!stairsUpPosition && position.x === stairsUpPosition.x && position.y === stairsUpPosition.y;
 
   const typeGrid = dungeon.grid.map(row => row.map(cell => cell.type));
-  const { forward, left, right } = getViewCells(
+  const { forward, left, right, leftLeft, rightRight } = getViewCells(
     typeGrid, position.x, position.y, facing,
     dungeon.width, dungeon.height
   );
@@ -72,9 +72,25 @@ export default function DungeonView() {
   const prompt = getPrompt(currentCell?.type ?? null, facingType, isOnStairsUp);
 
   const cellLabel = (c: string) => (c === 'wall' ? 'W' : c === 'floor' ? 'F' : c === 'door' ? 'D' : (c?.slice(0, 1) ?? '?').toUpperCase());
-  const debugSlice = (arr: typeof forward, n: number) => arr.slice(0, n).map(cellLabel).join(',');
+  const maxDepth = left.length - 1;
+  const debugLines = Array.from({ length: maxDepth + 1 }, (_, d) => {
+    const ll = cellLabel(leftLeft[d]);
+    const l = cellLabel(left[d]);
+    const f = d < forward.length ? cellLabel(forward[d]) : '?';
+    const r = cellLabel(right[d]);
+    const rr = cellLabel(rightRight[d]);
+    return `d${d}: LL=${ll} L=${l} F=${f} R=${r} RR=${rr}`;
+  });
   const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
   const rightCoords = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? `(${position.x + rd.x},${position.y + rd.y})` : `(${position.x + fd.x * i + rd.x},${position.y + fd.y * i + rd.y})`)).join(' ');
+  const debugTextToCopy = [...debugLines, `R cells: ${rightCoords(6)}`].join('\n');
+  const [copied, setCopied] = useState(false);
+  const handleCopyDebug = useCallback(() => {
+    void navigator.clipboard.writeText(debugTextToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }, [debugTextToCopy]);
 
   return (
     <svg
@@ -96,9 +112,23 @@ export default function DungeonView() {
       </text>
       {import.meta.env.DEV && (
         <g fontSize="10" fontFamily="monospace" fill="#446">
-          <text x={8} y={VIEW_HEIGHT - 44}>F: {debugSlice(forward, 6)}</text>
-          <text x={8} y={VIEW_HEIGHT - 32}>L: {debugSlice(left, 6)}</text>
-          <text x={8} y={VIEW_HEIGHT - 20}>R: {debugSlice(right, 6)} (d0=right edge)</text>
+          {/* Copy button at top, then depth stack (d0 closest at bottom), then R cells at very bottom */}
+          <foreignObject x={8} y={VIEW_HEIGHT - 8 - (maxDepth + 3) * 12} width={80} height={24}>
+            <button
+              type="button"
+              onClick={handleCopyDebug}
+              style={{
+                fontSize: 10, fontFamily: 'monospace', padding: '2px 6px',
+                background: copied ? '#2a4' : '#334', color: '#ccc', border: '1px solid #556', borderRadius: 4,
+              }}
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </foreignObject>
+          {/* Vertical: d0 (closest) at bottom, d_max (furthest) at top; stacked above R cells */}
+          {debugLines.map((line, d) => (
+            <text key={d} x={8} y={VIEW_HEIGHT - 8 - (d + 1) * 12}>{line}</text>
+          ))}
           <text x={8} y={VIEW_HEIGHT - 8}>R cells: {rightCoords(6)}</text>
         </g>
       )}

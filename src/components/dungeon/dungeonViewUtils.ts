@@ -16,7 +16,7 @@ export function getViewCells(
   px: number, py: number,
   facing: Direction,
   width: number, height: number
-): { forward: CellType[]; left: CellType[]; right: CellType[] } {
+): { forward: CellType[]; left: CellType[]; right: CellType[]; leftLeft: CellType[]; rightRight: CellType[] } {
   const fd = DIRECTION_DELTAS[facing];
   const ld = facing === 'N' ? DIRECTION_DELTAS['W'] : facing === 'W' ? DIRECTION_DELTAS['S'] : facing === 'S' ? DIRECTION_DELTAS['E'] : DIRECTION_DELTAS['N'];
   const rd = { x: -ld.x, y: -ld.y };
@@ -24,9 +24,13 @@ export function getViewCells(
   const forward: CellType[] = [];
   const left: CellType[] = [];
   const right: CellType[] = [];
+  const leftLeft: CellType[] = [];
+  const rightRight: CellType[] = [];
 
   left.push(getCellAt(grid, px + ld.x, py + ld.y, width, height));
   right.push(getCellAt(grid, px + rd.x, py + rd.y, width, height));
+  leftLeft.push(getCellAt(grid, px + 2 * ld.x, py + 2 * ld.y, width, height));
+  rightRight.push(getCellAt(grid, px + 2 * rd.x, py + 2 * rd.y, width, height));
 
   const viewDepth = DEPTHS.length - 1;
   for (let d = 1; d <= viewDepth; d++) {
@@ -35,9 +39,11 @@ export function getViewCells(
     forward.push(getCellAt(grid, fx, fy, width, height));
     left.push(getCellAt(grid, fx + ld.x, fy + ld.y, width, height));
     right.push(getCellAt(grid, fx + rd.x, fy + rd.y, width, height));
+    leftLeft.push(getCellAt(grid, fx + 2 * ld.x, fy + 2 * ld.y, width, height));
+    rightRight.push(getCellAt(grid, fx + 2 * rd.x, fy + 2 * rd.y, width, height));
   }
 
-  return { forward, left, right };
+  return { forward, left, right, leftLeft, rightRight };
 }
 
 export interface WallInstruction {
