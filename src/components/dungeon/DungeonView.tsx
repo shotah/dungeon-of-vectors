@@ -148,7 +148,7 @@ export default function DungeonView() {
 
   return (
     <svg
-      viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
+      viewBox={`${VIEW_WIDTH * 0.05} 0 ${VIEW_WIDTH * 0.9} ${VIEW_HEIGHT}`}
       width="100%"
       height="100%"
       style={{ background: getDungeonViewBackground(currentFloor), borderRadius: 8, border: '2px solid #333' }}

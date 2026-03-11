@@ -128,6 +128,9 @@ export default function GameScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStartOver, setShowStartOver] = useState(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'party'>('map');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [minimapHidden, setMinimapHidden] = useState(true);
+  const [mobilePanelHidden, setMobilePanelHidden] = useState(true);
 
   const handleQuickSave = useCallback(() => {
     saveGame(1);
@@ -230,37 +233,65 @@ export default function GameScreen() {
         </div>
       )}
 
-      {/* Desktop: sidebar (left) */}
+      {/* Desktop: sidebar (left) — collapsible, minimap hideable */}
       {!isMobile && (
-        <div style={{
-          width: 220, padding: '8px 10px', background: '#0f0f1a',
-          borderRight: '1px solid #2a2a3a', display: 'flex', flexDirection: 'column', gap: 8,
-          overflow: 'auto', flexShrink: 0,
-        }}>
-          {/* Floor / location info */}
-          <div style={{
-            padding: '4px 8px', background: '#1a1a2e', borderRadius: 4,
-            fontSize: 11, color: '#667', textAlign: 'center',
-          }}>
-            Floor {currentFloor} &middot; {facing === 'N' ? 'North' : facing === 'S' ? 'South' : facing === 'E' ? 'East' : 'West'} &middot; ({position.x}, {position.y})
-          </div>
-
-          <MiniMap />
-          <PartyBar />
-
-          {/* Action buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 'auto' }}>
-            <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
-              style={{ width: '100%' }}>Inventory (I)</Button>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <Button size="sm" onClick={handleQuickSave} style={{ flex: 1 }}>Save</Button>
+        <>
+          {sidebarCollapsed ? (
+            <div style={{
+              width: 48, padding: 6, background: '#0f0f1a',
+              borderRight: '1px solid #2a2a3a', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              flexShrink: 0,
+            }}>
+              <Button size="sm" variant="secondary" onClick={() => setSidebarCollapsed(false)}
+                style={{ padding: '6px 8px', minHeight: 32 }}>◀</Button>
+              <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
+                style={{ padding: '6px 8px', fontSize: 16, minHeight: 36 }}>📦</Button>
+              <Button size="sm" onClick={handleQuickSave}
+                style={{ padding: '6px 8px', fontSize: 16, minHeight: 36 }}>💾</Button>
               <Button size="sm" variant="secondary" onClick={() => setShowSettings(true)}
-                style={{ flex: 1 }}>Settings</Button>
+                style={{ padding: '6px 8px', fontSize: 16, minHeight: 36 }}>⚙</Button>
+              <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
+                style={{ padding: '6px 8px', fontSize: 16, minHeight: 36 }}>✕</Button>
             </div>
-            <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
-              style={{ width: '100%' }}>Start Over</Button>
-          </div>
-        </div>
+          ) : (
+            <div style={{
+              width: 220, padding: '8px 10px', background: '#0f0f1a',
+              borderRight: '1px solid #2a2a3a', display: 'flex', flexDirection: 'column', gap: 8,
+              overflow: 'auto', flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  flex: 1, padding: '4px 8px', background: '#1a1a2e', borderRadius: 4,
+                  fontSize: 11, color: '#667', textAlign: 'center',
+                }}>
+                  Floor {currentFloor} &middot; {facing === 'N' ? 'North' : facing === 'S' ? 'South' : facing === 'E' ? 'East' : 'West'} &middot; ({position.x}, {position.y})
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setSidebarCollapsed(true)}
+                  style={{ padding: '2px 6px', minHeight: 28 }}>▶</Button>
+              </div>
+
+              {!minimapHidden && <MiniMap />}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10 }}>
+                <button type="button" onClick={() => setMinimapHidden(!minimapHidden)} style={{
+                  background: 'none', border: 'none', color: '#667', cursor: 'pointer', fontFamily: 'monospace',
+                }}>{minimapHidden ? 'Show map' : 'Hide map'}</button>
+              </div>
+              <PartyBar />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 'auto' }}>
+                <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
+                  style={{ width: '100%' }}>Inventory (I)</Button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <Button size="sm" onClick={handleQuickSave} style={{ flex: 1 }}>Save</Button>
+                  <Button size="sm" variant="secondary" onClick={() => setShowSettings(true)}
+                    style={{ flex: 1 }}>Settings</Button>
+                </div>
+                <Button size="sm" variant="danger" onClick={() => setShowStartOver(true)}
+                  style={{ width: '100%' }}>Start Over</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Main content */}
@@ -272,13 +303,13 @@ export default function GameScreen() {
         {/* Mobile: compact top bar (no sidebar on mobile) */}
         {isMobile && (
           <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4,
             padding: '2px 4px', background: '#1a1a2e', borderRadius: 4, flexShrink: 0,
           }}>
             <span style={{ fontSize: 10, color: '#667' }}>
               F{currentFloor} {facing} ({position.x},{position.y})
             </span>
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <Button size="sm" variant="secondary" onClick={() => setShowInventory(true)}
                 style={{ padding: '6px 10px', fontSize: 16, minHeight: 36 }}>📦</Button>
               <Button size="sm" onClick={handleQuickSave}
@@ -291,19 +322,25 @@ export default function GameScreen() {
           </div>
         )}
 
-        {/* Dungeon viewport: aspect ratio so view fills the area with more panels visible */}
+        {/* Dungeon viewport: on mobile lives in growable area so arrows stay pinned at bottom */}
         <div style={{
-          flex: isMobile ? undefined : 1,
-          display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center',
-          minHeight: 0,
+          flex: 1,
+          display: 'flex', flexDirection: 'column', minHeight: 0,
+          ...(isMobile ? {} : { alignItems: 'center', justifyContent: 'center' }),
         }}>
           <div style={{
-            width: '100%',
-            maxWidth: isMobile ? undefined : 700,
-            aspectRatio: '3/2',
-            minHeight: 200,
+            flex: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            minHeight: 0,
           }}>
-            <DungeonView />
+            <div style={{
+              width: '100%',
+              height: '100%',
+              maxHeight: '100%',
+              ...(isMobile ? { minHeight: 120, aspectRatio: '3/2' } : { minHeight: 200 }),
+            }}>
+              <DungeonView />
+            </div>
           </div>
         </div>
 
@@ -325,7 +362,7 @@ export default function GameScreen() {
           </div>
         )}
 
-        {/* Mobile: tabbed info panel */}
+        {/* Mobile: tabbed info panel (Map / Party) — third “tab” is collapse/expand */}
         {isMobile && (
           <div style={{ flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 2 }}>
@@ -340,13 +377,28 @@ export default function GameScreen() {
                   {tab === 'map' ? 'Map' : 'Party'}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setMobilePanelHidden(!mobilePanelHidden)}
+                style={{
+                  padding: '10px 14px', background: '#0f0f1a',
+                  border: '1px solid #2a2a3a',
+                  borderBottom: mobilePanelHidden ? '1px solid #2a2a3a' : 'none',
+                  borderRadius: '4px 4px 0 0', color: '#667',
+                  fontSize: 14, fontFamily: 'monospace', cursor: 'pointer',
+                }}
+              >
+                {mobilePanelHidden ? '▲' : '▼'}
+              </button>
             </div>
-            <div style={{
-              background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: '0 0 4px 4px',
-              padding: 4, maxHeight: 280, overflow: 'auto',
-            }}>
-              {mobileTab === 'map' ? <MiniMap mobile /> : <PartyBar />}
-            </div>
+            {!mobilePanelHidden && (
+              <div style={{
+                background: '#1a1a2e', border: '1px solid #2a2a3a', borderRadius: '0 0 4px 4px',
+                padding: 4, maxHeight: 280, overflow: 'auto',
+              }}>
+                {mobileTab === 'map' ? <MiniMap mobile /> : <PartyBar />}
+              </div>
+            )}
           </div>
         )}
 
