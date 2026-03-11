@@ -7,6 +7,98 @@ import StatBar from '../ui/StatBar';
 import { getSpellsForClass } from '../../data/spells';
 import { getAbilitiesForClass } from '../../data/abilities';
 import { getEffectiveAttack } from '../../systems/combatEngine';
+import { ItemIcon } from '../svg/items/ItemIcons';
+import { sortInventory } from '../../utils/inventorySort';
+import type { Item, ItemType } from '../../types';
+
+const FILTER_TYPES: { label: string; value: ItemType | 'all' }[] = [
+  { label: 'All', value: 'all' },
+  { label: 'Heal', value: 'consumable' },
+];
+
+function CombatItemPicker({ items, onSelect, onCancel }: {
+  items: Item[];
+  onSelect: (item: Item) => void;
+  onCancel: () => void;
+}) {
+  const [sortBy, setSortBy] = useState<'type' | 'name' | 'value'>('type');
+  const [filter, setFilter] = useState<ItemType | 'all'>('all');
+  const isMobile = useIsMobile();
+
+  const filtered = useMemo(() => {
+    const base = filter === 'all' ? items : items.filter(i => i.type === filter);
+    return sortInventory(base, sortBy);
+  }, [items, filter, sortBy]);
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.85)',
+      display: 'flex', flexDirection: 'column',
+      zIndex: 10, fontFamily: 'monospace', color: '#ddd', borderRadius: 8,
+    }}>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '8px 12px', borderBottom: '1px solid #3a3a5a', flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 14, color: '#aaccff', fontWeight: 'bold' }}>Use Item</span>
+        <Button size="sm" variant="secondary" onClick={onCancel}
+          style={{ minHeight: 28, padding: '4px 10px' }}>Back</Button>
+      </div>
+
+      <div style={{
+        display: 'flex', gap: 6, padding: '6px 12px', flexShrink: 0,
+        borderBottom: '1px solid #2a2a3a', flexWrap: 'wrap', alignItems: 'center',
+      }}>
+        {FILTER_TYPES.map(f => (
+          <button key={f.value} type="button" onClick={() => setFilter(f.value)} style={{
+            fontSize: 10, padding: '2px 8px', border: `1px solid ${filter === f.value ? '#4a6aaa' : '#3a3a5a'}`,
+            borderRadius: 3, background: filter === f.value ? '#2a3a5a' : '#1a1a2e',
+            color: filter === f.value ? '#aaccff' : '#888', cursor: 'pointer', fontFamily: 'monospace',
+          }}>{f.label}</button>
+        ))}
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 10, color: '#667' }}>Sort:</span>
+        {(['type', 'name', 'value'] as const).map(mode => (
+          <button key={mode} type="button" onClick={() => setSortBy(mode)} style={{
+            fontSize: 10, padding: '2px 6px', border: `1px solid ${sortBy === mode ? '#4a6aaa' : '#3a3a5a'}`,
+            borderRadius: 3, background: sortBy === mode ? '#2a3a5a' : '#1a1a2e',
+            color: sortBy === mode ? '#aaccff' : '#888', cursor: 'pointer', fontFamily: 'monospace',
+          }}>{mode === 'type' ? 'Type' : mode === 'name' ? 'Name' : 'Value'}</button>
+        ))}
+      </div>
+
+      <div style={{
+        flex: 1, overflow: 'auto', padding: isMobile ? '4px 8px' : '6px 12px',
+      }}>
+        {filtered.length === 0 && (
+          <div style={{ color: '#555', fontSize: 12, textAlign: 'center', padding: 20 }}>No items</div>
+        )}
+        {filtered.map((item, i) => (
+          <div
+            key={`${item.id}-${i}`}
+            onClick={() => onSelect(item)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+              marginBottom: 2, borderRadius: 4, cursor: 'pointer',
+              background: '#0f0f1a', border: '1px solid transparent',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#2a3a5a'; e.currentTarget.style.borderColor = '#4a6aaa'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#0f0f1a'; e.currentTarget.style.borderColor = 'transparent'; }}
+          >
+            <ItemIcon icon={item.icon} size={22} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: '#ddd' }}>{item.name}</div>
+              <div style={{ fontSize: 10, color: '#888' }}>{item.description}</div>
+              {item.healAmount && <span style={{ fontSize: 10, color: '#6c6' }}>Heals {item.healAmount} HP</span>}
+              {item.manaAmount && <span style={{ fontSize: 10, color: '#68c', marginLeft: item.healAmount ? 8 : 0 }}>+{item.manaAmount} MP</span>}
+              {item.reviveAmount && <span style={{ fontSize: 10, color: '#db6' }}>Revive {Math.round(item.reviveAmount * 100)}% HP</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function CombatScreen() {
   const combat = useGameStore(s => s.combat);
@@ -177,6 +269,7 @@ export default function CombatScreen() {
       <div style={{
         width: '90%', maxWidth: 700, background: '#0f0f1a',
         border: '2px solid #3a3a5a', borderRadius: 8, overflow: 'hidden',
+        position: 'relative',
       }}>
         {/* Monster display */}
         <div style={{
@@ -376,12 +469,8 @@ export default function CombatScreen() {
                 </div>
               )}
               {combat.selectedAction === 'item' && !combat.selectedItem && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {consumables.map((item, ci) => (
-                    <Button key={`${item.id}-${ci}`} onClick={() => handleSelectCombatItem(item)} size="sm" variant="secondary">
-                      {item.name}
-                    </Button>
-                  ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: '#888' }}>Select an item from the panel above...</span>
                   <div style={{ flex: 1 }} />
                   <Button onClick={handleCancel} size="sm" variant="secondary">Back</Button>
                 </div>
@@ -412,6 +501,14 @@ export default function CombatScreen() {
             <div style={{ fontSize: 12, color: '#888', textAlign: 'center' }}>Enemies are attacking...</div>
           )}
         </div>
+
+        {combat.selectedAction === 'item' && !combat.selectedItem && (
+          <CombatItemPicker
+            items={consumables}
+            onSelect={handleSelectCombatItem}
+            onCancel={handleCancel}
+          />
+        )}
       </div>
     </div>
   );
