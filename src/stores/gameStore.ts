@@ -142,8 +142,8 @@ function createCharacter(name: string, characterClass: string, index: number): C
 }
 
 function exploreAround(map: boolean[][], x: number, y: number, width: number, height: number) {
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -169,7 +169,7 @@ function exploreLOS(map: boolean[][], x: number, y: number, facing: Direction, g
     if (fx < 0 || fx >= width || fy < 0 || fy >= height) break;
     map[fy][fx] = true;
 
-    for (let s = 1; s <= 2; s++) {
+    for (let s = 1; s <= 3; s++) {
       const lx = fx + ldx * s, ly = fy + ldy * s;
       if (lx >= 0 && lx < width && ly >= 0 && ly < height) map[ly][lx] = true;
       const rx = fx - ldx * s, ry = fy - ldy * s;

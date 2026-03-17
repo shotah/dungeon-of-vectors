@@ -1,8 +1,9 @@
-import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
+import { DEPTHS, EXTENDED_DEPTH, VIEW_WIDTH, VIEW_HEIGHT, TOTAL_COLS } from './dungeonConstants';
 import { darkenHex, floorDarkenAmount, floorRedShift } from '../../../utils/floorGradient';
 import type { CellType } from '../../../types';
 
-const COLS = 5;
+const COLS = TOTAL_COLS;
+const INNER_COLS = 5;
 
 function buildFloorGrid() {
   const vanishX = VIEW_WIDTH / 2;
@@ -15,7 +16,7 @@ function buildFloorGrid() {
     const t = (y - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
     const row: { x: number; y: number }[] = [];
     for (let c = 0; c <= COLS; c++) {
-      const startX = (c / COLS) * VIEW_WIDTH;
+      const startX = ((c - 1) / INNER_COLS) * VIEW_WIDTH;
       row.push({ x: startX + (vanishX - startX) * t, y });
     }
     grid.push(row);
@@ -29,6 +30,8 @@ type ViewCells = {
   right: CellType[];
   leftLeft: CellType[];
   rightRight: CellType[];
+  leftLeftLeft: CellType[];
+  rightRightRight: CellType[];
 };
 
 type FloorAndCeilingProps = { floor?: number; viewCells?: ViewCells };
@@ -36,11 +39,13 @@ type FloorAndCeilingProps = { floor?: number; viewCells?: ViewCells };
 function getCellForTile(d: number, c: number, viewCells?: ViewCells): CellType {
   if (!viewCells) return 'floor';
   switch (c) {
-    case 0: return viewCells.leftLeft[d] ?? 'wall';
-    case 1: return viewCells.left[d] ?? 'wall';
-    case 2: return d === 0 ? 'floor' : (viewCells.forward[d - 1] ?? 'wall');
-    case 3: return viewCells.right[d] ?? 'wall';
-    case 4: return viewCells.rightRight[d] ?? 'wall';
+    case 0: return viewCells.leftLeftLeft[d] ?? 'wall';
+    case 1: return viewCells.leftLeft[d] ?? 'wall';
+    case 2: return viewCells.left[d] ?? 'wall';
+    case 3: return d === 0 ? 'floor' : (viewCells.forward[d - 1] ?? 'wall');
+    case 4: return viewCells.right[d] ?? 'wall';
+    case 5: return viewCells.rightRight[d] ?? 'wall';
+    case 6: return viewCells.rightRightRight[d] ?? 'wall';
     default: return 'wall';
   }
 }
@@ -105,7 +110,7 @@ export default function FloorAndCeiling({ floor = 1, viewCells }: FloorAndCeilin
 
       {Array.from({ length: COLS - 1 }, (_, i) => i + 1).map(i => (
         <line key={`cv-${i}`}
-          x1={(i * VIEW_WIDTH) / COLS} y1={0}
+          x1={((i - 1) / INNER_COLS) * VIEW_WIDTH} y1={0}
           x2={vanishX} y2={vanishY}
           stroke={lineColor} strokeWidth="0.5" opacity="0.2"
         />

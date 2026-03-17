@@ -125,6 +125,12 @@ describe('getViewCells', () => {
       expect(result.leftLeft).toHaveLength(DEPTHS.length);
       expect(result.rightRight).toHaveLength(DEPTHS.length);
     });
+
+    it('leftLeftLeft and rightRightRight have viewDepth+1 elements', () => {
+      const result = getViewCells(grid, 5, 5, 'N', W, H);
+      expect(result.leftLeftLeft).toHaveLength(DEPTHS.length);
+      expect(result.rightRightRight).toHaveLength(DEPTHS.length);
+    });
   });
 
   describe('facing North from (5,5)', () => {
@@ -161,6 +167,14 @@ describe('getViewCells', () => {
     it('rightRight[0] is two cells east of player (7,5)', () => {
       expect(result.rightRight[0]).toBe(getCellAt(grid, 7, 5, W, H));
     });
+
+    it('leftLeftLeft[0] is three cells west of player (2,5)', () => {
+      expect(result.leftLeftLeft[0]).toBe(getCellAt(grid, 2, 5, W, H));
+    });
+
+    it('rightRightRight[0] is three cells east of player (8,5)', () => {
+      expect(result.rightRightRight[0]).toBe(getCellAt(grid, 8, 5, W, H));
+    });
   });
 
   describe('facing West: passage to the right (minimap should match 3D)', () => {
@@ -180,7 +194,7 @@ describe('getViewCells', () => {
       expect(right[1]).toBe('wall');
 
       const instructions = buildWallInstructions(forward, left, right);
-      const rightWalls = instructions.filter(i => i.type === 'column_wall' && i.column === 3);
+      const rightWalls = instructions.filter(i => i.type === 'column_wall' && i.column === 4);
 
       expect(rightWalls.some(r => r.depth === 0)).toBe(false);
       expect(rightWalls.some(r => r.depth === 1)).toBe(true);
@@ -315,15 +329,15 @@ describe('buildWallInstructions', () => {
 
     it('produces column wall instructions for L and R at all depths', () => {
       const result = buildWallInstructions(forward, left, right);
-      const lefts = result.filter(i => i.type === 'column_wall' && i.column === 1);
-      const rights = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const lefts = result.filter(i => i.type === 'column_wall' && i.column === 2);
+      const rights = result.filter(i => i.type === 'column_wall' && i.column === 4);
       expect(lefts).toHaveLength(4);
       expect(rights).toHaveLength(4);
     });
 
     it('left column walls are at depths 3, 2, 1, 0 (far to near)', () => {
       const result = buildWallInstructions(forward, left, right);
-      const leftDepths = result.filter(i => i.type === 'column_wall' && i.column === 1).map(i => i.depth);
+      const leftDepths = result.filter(i => i.type === 'column_wall' && i.column === 2).map(i => i.depth);
       expect(leftDepths).toEqual([3, 2, 1, 0]);
     });
   });
@@ -350,8 +364,8 @@ describe('buildWallInstructions', () => {
 
     it('still emits column walls at depth 0 (closer than front wall)', () => {
       const result = buildWallInstructions(forward, left, right);
-      const leftD0 = result.find(i => i.type === 'column_wall' && i.column === 1 && i.depth === 0);
-      const rightD0 = result.find(i => i.type === 'column_wall' && i.column === 3 && i.depth === 0);
+      const leftD0 = result.find(i => i.type === 'column_wall' && i.column === 2 && i.depth === 0);
+      const rightD0 = result.find(i => i.type === 'column_wall' && i.column === 4 && i.depth === 0);
       expect(leftD0).toBeDefined();
       expect(rightD0).toBeDefined();
     });
@@ -452,7 +466,7 @@ describe('buildWallInstructions', () => {
       const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const lefts = result.filter(i => i.type === 'column_wall' && i.column === 1);
+      const lefts = result.filter(i => i.type === 'column_wall' && i.column === 2);
       expect(lefts).toHaveLength(1);
       expect(lefts[0].depth).toBe(0);
     });
@@ -465,7 +479,7 @@ describe('buildWallInstructions', () => {
       const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const leftWalls = result.filter(i => i.type === 'column_wall' && i.column === 1);
+      const leftWalls = result.filter(i => i.type === 'column_wall' && i.column === 2);
       expect(leftWalls).toHaveLength(1);
       expect(leftWalls[0].depth).toBe(0);
     });
@@ -476,7 +490,7 @@ describe('buildWallInstructions', () => {
       const right: CellType[] = ['wall', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 4);
       expect(rightWalls).toHaveLength(1);
       expect(rightWalls[0].depth).toBe(0);
     });
@@ -534,7 +548,7 @@ describe('buildWallInstructions', () => {
       const right: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const leftDepths = result.filter(i => i.type === 'column_wall' && i.column === 1).map(i => i.depth);
+      const leftDepths = result.filter(i => i.type === 'column_wall' && i.column === 2).map(i => i.depth);
       expect(leftDepths).toEqual([3, 2, 1, 0]);
     });
   });
@@ -546,7 +560,7 @@ describe('buildWallInstructions', () => {
       const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const rights = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const rights = result.filter(i => i.type === 'column_wall' && i.column === 4);
       expect(rights).toHaveLength(1);
       expect(rights[0].depth).toBe(1);
     });
@@ -557,7 +571,7 @@ describe('buildWallInstructions', () => {
       const left: CellType[] = ['floor', 'floor', 'floor', 'floor', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const rights = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const rights = result.filter(i => i.type === 'column_wall' && i.column === 4);
       expect(rights).toHaveLength(2);
       expect(rights.map(r => r.depth).sort()).toEqual([1, 3]);
     });
@@ -568,7 +582,7 @@ describe('buildWallInstructions', () => {
       const right: CellType[] = ['wall', 'floor', 'wall', 'wall', 'floor'];
 
       const result = buildWallInstructions(forward, left, right);
-      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 4);
       expect(rightWalls.map(r => r.depth).sort()).toEqual([0, 2, 3]);
     });
   });
@@ -582,7 +596,7 @@ describe('buildWallInstructions', () => {
       const result = buildWallInstructions(forward, left, right);
       const sides = result.filter(i => i.type === 'column_side');
       expect(sides.length).toBeGreaterThan(0);
-      expect(sides.every(s => s.edge === 1 || s.edge === 2)).toBe(true);
+      expect(sides.every(s => s.edge === 2 || s.edge === 3)).toBe(true);
     });
 
     it('deduplicates shared edges between adjacent wall columns', () => {
@@ -606,8 +620,8 @@ describe('buildWallInstructions', () => {
     it('produces expected wall pattern', () => {
       const result = buildWallInstructions(forward, left, right);
 
-      const leftWalls = result.filter(i => i.type === 'column_wall' && i.column === 1);
-      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 3);
+      const leftWalls = result.filter(i => i.type === 'column_wall' && i.column === 2);
+      const rightWalls = result.filter(i => i.type === 'column_wall' && i.column === 4);
       const fronts = result.filter(i => i.type === 'front');
 
       expect(leftWalls.map(i => i.depth).sort()).toEqual([0, 2]);

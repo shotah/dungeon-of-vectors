@@ -31,19 +31,21 @@ export default function DungeonView() {
       return;
     }
     const typeGrid = dungeon.grid.map(row => row.map(cell => cell.type));
-    const { forward, left, right, leftLeft, rightRight } = getViewCells(
+    const { forward, left, right, leftLeft, rightRight, leftLeftLeft, rightRightRight } = getViewCells(
       typeGrid, position.x, position.y, facing,
       dungeon.width, dungeon.height
     );
     const cellLabel = (c: string) => (c === 'wall' ? 'W' : c === 'floor' ? 'F' : c === 'door' ? 'D' : (c?.slice(0, 1) ?? '?').toUpperCase());
     const maxDepth = left.length - 1;
     const debugLines = Array.from({ length: maxDepth + 1 }, (_, d) => {
+      const lll = cellLabel(leftLeftLeft[d]);
       const ll = cellLabel(leftLeft[d]);
       const l = cellLabel(left[d]);
-      const f = d < forward.length ? cellLabel(forward[d]) : '?';
+      const f = d === 0 ? '-' : ((d - 1) < forward.length ? cellLabel(forward[d - 1]) : '?');
       const r = cellLabel(right[d]);
       const rr = cellLabel(rightRight[d]);
-      return `d${d}: LL=${ll} L=${l} F=${f} R=${r} RR=${rr}`;
+      const rrr = cellLabel(rightRightRight[d]);
+      return `d${d}: 3L=${lll} LL=${ll} L=${l} F=${f} R=${r} RR=${rr} 3R=${rrr}`;
     });
     const fd = DIRECTION_DELTAS[facing];
     const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
@@ -56,14 +58,15 @@ export default function DungeonView() {
   const isOnStairsUp = currentFloor > 1 && !!stairsUpPosition && position.x === stairsUpPosition.x && position.y === stairsUpPosition.y;
 
   const typeGrid = dungeon.grid.map(row => row.map(cell => cell.type));
-  const { forward, left, right, leftLeft, rightRight } = getViewCells(
+  const { forward, left, right, leftLeft, rightRight, leftLeftLeft, rightRightRight } = getViewCells(
     typeGrid, position.x, position.y, facing,
     dungeon.width, dungeon.height
   );
 
-  const instructions = buildWallInstructions(forward, left, right, leftLeft, rightRight);
+  const instructions = buildWallInstructions(forward, left, right, leftLeft, rightRight, leftLeftLeft, rightRightRight);
 
   const wallElements: React.ReactElement[] = [];
+  const sideCellArrays = [leftLeftLeft, leftLeft, left, null, right, rightRight, rightRightRight];
   for (const inst of instructions) {
     switch (inst.type) {
       case 'column_side': {
@@ -106,9 +109,23 @@ export default function DungeonView() {
         }
         break;
       }
-      case 'front':
+      case 'front': {
         wallElements.push(<FrontWall key={`fw-${inst.depth}`} depth={inst.depth} cellType={inst.cellType!} />);
+        const depthCfg = DEPTHS[inst.depth];
+        if (depthCfg) {
+          for (let col = 0; col < sideCellArrays.length; col++) {
+            if (col === 3) continue;
+            const arr = sideCellArrays[col];
+            if (arr && inst.depth < arr.length && arr[inst.depth] === 'door') {
+              const colLeft = columnEdgeX(col, depthCfg.bottom);
+              const colRight = columnEdgeX(col + 1, depthCfg.bottom);
+              const colD: DepthConfig = { left: colLeft, right: colRight, top: depthCfg.top, bottom: depthCfg.bottom };
+              wallElements.push(<DoorWallSVG key={`fwd-${inst.depth}-${col}`} d={colD} />);
+            }
+          }
+        }
         break;
+      }
       case 'column_front': {
         const col = inst.column!;
         const depthCfg = DEPTHS[inst.depth];
@@ -127,7 +144,6 @@ export default function DungeonView() {
             case 'chest': wallElements.push(<ChestWallSVG key={k} d={colD} />); break;
             case 'trader': wallElements.push(<TraderWallSVG key={k} d={colD} />); break;
             case 'boss': wallElements.push(<BossWallSVG key={k} d={colD} />); break;
-            case 'door': wallElements.push(<DoorWallSVG key={k} d={colD} />); break;
           }
         }
         break;
@@ -160,12 +176,14 @@ export default function DungeonView() {
   const cellLabel = (c: string) => (c === 'wall' ? 'W' : c === 'floor' ? 'F' : c === 'door' ? 'D' : (c?.slice(0, 1) ?? '?').toUpperCase());
   const maxDepth = left.length - 1;
   const debugLines = Array.from({ length: maxDepth + 1 }, (_, d) => {
+    const lll = cellLabel(leftLeftLeft[d]);
     const ll = cellLabel(leftLeft[d]);
     const l = cellLabel(left[d]);
-    const f = d < forward.length ? cellLabel(forward[d]) : '?';
+    const f = d === 0 ? '-' : ((d - 1) < forward.length ? cellLabel(forward[d - 1]) : '?');
     const r = cellLabel(right[d]);
     const rr = cellLabel(rightRight[d]);
-    return `d${d}: LL=${ll} L=${l} F=${f} R=${r} RR=${rr}`;
+    const rrr = cellLabel(rightRightRight[d]);
+    return `d${d}: 3L=${lll} LL=${ll} L=${l} F=${f} R=${r} RR=${rr} 3R=${rrr}`;
   });
   const rd = facing === 'N' ? { x: 1, y: 0 } : facing === 'E' ? { x: 0, y: 1 } : facing === 'S' ? { x: -1, y: 0 } : { x: 0, y: -1 };
   const rightCoords = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? `(${position.x + rd.x},${position.y + rd.y})` : `(${position.x + fd.x * i + rd.x},${position.y + fd.y * i + rd.y})`)).join(' ');
@@ -178,7 +196,7 @@ export default function DungeonView() {
       style={{ background: getDungeonViewBackground(currentFloor), borderRadius: 8, border: '2px solid #333' }}
     >
       <WallGradients floor={currentFloor} />
-      <FloorAndCeiling floor={currentFloor} viewCells={{ forward, left, right, leftLeft, rightRight }} />
+      <FloorAndCeiling floor={currentFloor} viewCells={{ forward, left, right, leftLeft, rightRight, leftLeftLeft, rightRightRight }} />
       {wallElements}
       {prompt && (
         <text x={VIEW_WIDTH / 2} y={VIEW_HEIGHT - 15} textAnchor="middle" fill={prompt.color} fontSize="14" fontFamily="monospace">

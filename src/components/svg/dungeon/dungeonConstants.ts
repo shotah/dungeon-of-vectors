@@ -48,11 +48,13 @@ export const EXTENDED_DEPTH: DepthConfig = {
   ...depthBoundsFromBottom(VIEW_HEIGHT - 150),
 };
 
-const TOTAL_COLS = 5;
+export const TOTAL_COLS = 7;
+const INNER_COLS = 5;
 
-/** X coordinate for a column edge at a given y, using same perspective as floor grid. */
+/** X coordinate for a column edge at a given y, using same perspective as floor grid.
+ *  Columns 1-5 match the original 5-column layout; 0 (LLL) and 6 (RRR) extend beyond. */
 export function columnEdgeX(colEdge: number, y: number): number {
   const t = (y - VIEW_HEIGHT) / (VANISH_Y - VIEW_HEIGHT);
-  const startX = (colEdge / TOTAL_COLS) * VIEW_WIDTH;
+  const startX = ((colEdge - 1) / INNER_COLS) * VIEW_WIDTH;
   return startX + (VANISH_X - startX) * t;
 }

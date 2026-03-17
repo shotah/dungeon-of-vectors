@@ -11,14 +11,14 @@ export function isBlockingSide(cell: CellType): boolean {
   return cell === 'wall' || cell === 'door';
 }
 
-const SIDE_OBJECT_TYPES = new Set<CellType>(['stairs_down', 'stairs_up', 'chest', 'trader', 'boss', 'door']);
+const SIDE_OBJECT_TYPES = new Set<CellType>(['stairs_down', 'stairs_up', 'chest', 'trader', 'boss']);
 
 export function getViewCells(
   grid: CellType[][],
   px: number, py: number,
   facing: Direction,
   width: number, height: number
-): { forward: CellType[]; left: CellType[]; right: CellType[]; leftLeft: CellType[]; rightRight: CellType[] } {
+): { forward: CellType[]; left: CellType[]; right: CellType[]; leftLeft: CellType[]; rightRight: CellType[]; leftLeftLeft: CellType[]; rightRightRight: CellType[] } {
   const fd = DIRECTION_DELTAS[facing];
   const ld = facing === 'N' ? DIRECTION_DELTAS['W'] : facing === 'W' ? DIRECTION_DELTAS['S'] : facing === 'S' ? DIRECTION_DELTAS['E'] : DIRECTION_DELTAS['N'];
   const rd = { x: -ld.x, y: -ld.y };
@@ -28,11 +28,15 @@ export function getViewCells(
   const right: CellType[] = [];
   const leftLeft: CellType[] = [];
   const rightRight: CellType[] = [];
+  const leftLeftLeft: CellType[] = [];
+  const rightRightRight: CellType[] = [];
 
   left.push(getCellAt(grid, px + ld.x, py + ld.y, width, height));
   right.push(getCellAt(grid, px + rd.x, py + rd.y, width, height));
   leftLeft.push(getCellAt(grid, px + 2 * ld.x, py + 2 * ld.y, width, height));
   rightRight.push(getCellAt(grid, px + 2 * rd.x, py + 2 * rd.y, width, height));
+  leftLeftLeft.push(getCellAt(grid, px + 3 * ld.x, py + 3 * ld.y, width, height));
+  rightRightRight.push(getCellAt(grid, px + 3 * rd.x, py + 3 * rd.y, width, height));
 
   const viewDepth = DEPTHS.length - 1;
   for (let d = 1; d <= viewDepth; d++) {
@@ -43,14 +47,18 @@ export function getViewCells(
     right.push(getCellAt(grid, fx + rd.x, fy + rd.y, width, height));
     leftLeft.push(getCellAt(grid, fx + 2 * ld.x, fy + 2 * ld.y, width, height));
     rightRight.push(getCellAt(grid, fx + 2 * rd.x, fy + 2 * rd.y, width, height));
+    leftLeftLeft.push(getCellAt(grid, fx + 3 * ld.x, fy + 3 * ld.y, width, height));
+    rightRightRight.push(getCellAt(grid, fx + 3 * rd.x, fy + 3 * rd.y, width, height));
   }
 
   for (let i = 0; i < left.length; i++) {
     if (isBlockingSide(left[i])) leftLeft[i] = 'wall';
     if (isBlockingSide(right[i])) rightRight[i] = 'wall';
+    if (isBlockingSide(leftLeft[i])) leftLeftLeft[i] = 'wall';
+    if (isBlockingSide(rightRight[i])) rightRightRight[i] = 'wall';
   }
 
-  return { forward, left, right, leftLeft, rightRight };
+  return { forward, left, right, leftLeft, rightRight, leftLeftLeft, rightRightRight };
 }
 
 export interface WallInstruction {
@@ -66,7 +74,9 @@ export function buildWallInstructions(
   left: CellType[],
   right: CellType[],
   leftLeft?: CellType[],
-  rightRight?: CellType[]
+  rightRight?: CellType[],
+  leftLeftLeft?: CellType[],
+  rightRightRight?: CellType[]
 ): WallInstruction[] {
   const instructions: WallInstruction[] = [];
 
@@ -83,25 +93,35 @@ export function buildWallInstructions(
     const sideEdges = new Set<number>();
     const columnWalls: number[] = [];
 
-    if (leftLeft && d < leftLeft.length && isBlockingSide(leftLeft[d])) {
+    if (leftLeftLeft && d < leftLeftLeft.length && isBlockingSide(leftLeftLeft[d])) {
       columnWalls.push(0);
       sideEdges.add(0);
       sideEdges.add(1);
     }
-    if (d < left.length && isBlockingSide(left[d])) {
+    if (leftLeft && d < leftLeft.length && isBlockingSide(leftLeft[d])) {
       columnWalls.push(1);
       sideEdges.add(1);
       sideEdges.add(2);
     }
-    if (d < right.length && isBlockingSide(right[d])) {
-      columnWalls.push(3);
+    if (d < left.length && isBlockingSide(left[d])) {
+      columnWalls.push(2);
+      sideEdges.add(2);
       sideEdges.add(3);
-      sideEdges.add(4);
     }
-    if (rightRight && d < rightRight.length && isBlockingSide(rightRight[d])) {
+    if (d < right.length && isBlockingSide(right[d])) {
       columnWalls.push(4);
       sideEdges.add(4);
       sideEdges.add(5);
+    }
+    if (rightRight && d < rightRight.length && isBlockingSide(rightRight[d])) {
+      columnWalls.push(5);
+      sideEdges.add(5);
+      sideEdges.add(6);
+    }
+    if (rightRightRight && d < rightRightRight.length && isBlockingSide(rightRightRight[d])) {
+      columnWalls.push(6);
+      sideEdges.add(6);
+      sideEdges.add(7);
     }
 
     // Side strips first (render behind column walls)
@@ -113,18 +133,24 @@ export function buildWallInstructions(
       instructions.push({ type: 'column_wall', depth: d, column: col });
     }
 
-    // Special objects (stairs, chests, traders, bosses) in side columns
+    // Special objects (stairs, chests, traders, bosses, doors) in side columns
+    if (leftLeftLeft && d < leftLeftLeft.length && SIDE_OBJECT_TYPES.has(leftLeftLeft[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 0, cellType: leftLeftLeft[d] });
+    }
     if (leftLeft && d < leftLeft.length && SIDE_OBJECT_TYPES.has(leftLeft[d])) {
-      instructions.push({ type: 'column_front', depth: d, column: 0, cellType: leftLeft[d] });
+      instructions.push({ type: 'column_front', depth: d, column: 1, cellType: leftLeft[d] });
     }
     if (d < left.length && SIDE_OBJECT_TYPES.has(left[d])) {
-      instructions.push({ type: 'column_front', depth: d, column: 1, cellType: left[d] });
+      instructions.push({ type: 'column_front', depth: d, column: 2, cellType: left[d] });
     }
     if (d < right.length && SIDE_OBJECT_TYPES.has(right[d])) {
-      instructions.push({ type: 'column_front', depth: d, column: 3, cellType: right[d] });
+      instructions.push({ type: 'column_front', depth: d, column: 4, cellType: right[d] });
     }
     if (rightRight && d < rightRight.length && SIDE_OBJECT_TYPES.has(rightRight[d])) {
-      instructions.push({ type: 'column_front', depth: d, column: 4, cellType: rightRight[d] });
+      instructions.push({ type: 'column_front', depth: d, column: 5, cellType: rightRight[d] });
+    }
+    if (rightRightRight && d < rightRightRight.length && SIDE_OBJECT_TYPES.has(rightRightRight[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 6, cellType: rightRightRight[d] });
     }
 
     if (nearestBlocker >= 0 && d > nearestBlocker) continue;
