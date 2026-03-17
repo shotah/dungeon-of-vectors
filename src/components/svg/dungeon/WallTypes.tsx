@@ -1,8 +1,8 @@
 import type { DepthConfig } from './dungeonConstants';
-import { VIEW_WIDTH, VIEW_HEIGHT } from './dungeonConstants';
+import { VIEW_HEIGHT } from './dungeonConstants';
 
 export function DoorWallSVG({ d }: { d: DepthConfig }) {
-  const doorW = (d.right - d.left) * 0.4;
+  const doorW = (d.right - d.left) * 0.6;
   const doorH = (d.bottom - d.top) * 0.7;
   const doorX = (d.left + d.right) / 2 - doorW / 2;
   const doorY = d.bottom - doorH;
@@ -18,7 +18,7 @@ export function DoorWallSVG({ d }: { d: DepthConfig }) {
 }
 
 export function StairsDownSVG({ d, next }: { d: DepthConfig; next: DepthConfig }) {
-  const vanishX = VIEW_WIDTH / 2;
+  const localVanishX = (d.left + d.right) / 2;
   const vanishY = VIEW_HEIGHT / 2;
   const nearY = d.bottom;
   const farY = next.bottom;
@@ -27,10 +27,10 @@ export function StairsDownSVG({ d, next }: { d: DepthConfig; next: DepthConfig }
   const inset = 0.2;
   const nearL = d.left + (d.right - d.left) * inset;
   const nearR = d.right - (d.right - d.left) * inset;
-  const floorNearL = nearL + (vanishX - nearL) * tNear;
-  const floorNearR = nearR + (vanishX - nearR) * tNear;
-  const floorFarL = nearL + (vanishX - nearL) * tFar;
-  const floorFarR = nearR + (vanishX - nearR) * tFar;
+  const floorNearL = nearL + (localVanishX - nearL) * tNear;
+  const floorNearR = nearR + (localVanishX - nearR) * tNear;
+  const floorFarL = nearL + (localVanishX - nearL) * tFar;
+  const floorFarR = nearR + (localVanishX - nearR) * tFar;
   const holeW = floorNearR - floorNearL;
   const holeSpan = Math.abs(farY - nearY);
   const stepCount = 4;
@@ -69,24 +69,18 @@ export function StairsDownSVG({ d, next }: { d: DepthConfig; next: DepthConfig }
 }
 
 export function StairsUpSVG({ d, next }: { d: DepthConfig; next: DepthConfig }) {
-  const vanishX = VIEW_WIDTH / 2;
+  const localVanishX = (d.left + d.right) / 2;
   const vanishY = VIEW_HEIGHT / 2;
-  const tTopNear = (d.top - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
-  const tTopFar = (next.top - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
-  const inset = 0.15;
-  const nearL = d.left + (d.right - d.left) * inset;
-  const nearR = d.right - (d.right - d.left) * inset;
-  const ceilNearL = nearL + (vanishX - nearL) * tTopNear;
-  const ceilNearR = nearR + (vanishX - nearR) * tTopNear;
-  const ceilFarL = nearL + (vanishX - nearL) * tTopFar;
-  const ceilFarR = nearR + (vanishX - nearR) * tTopFar;
   const bandH = d.bottom - d.top;
-  const stepCount = 5;
-  const stepH = bandH * 0.15;
-  const stairBottom = d.bottom - bandH * 0.1;
-  const fullWidth = (d.right - d.left) * 0.6;
   const cx = (d.left + d.right) / 2;
-  const taper = 0.5;
+  const colW = d.right - d.left;
+
+  const stepCount = 8;
+  const stairBottom = d.bottom - bandH * 0.05;
+  const stepH = bandH * 0.09;
+  const fullWidth = colW * 0.7;
+  const taper = 0.55;
+
   const steps = Array.from({ length: stepCount }, (_, i) => {
     const t = stepCount > 1 ? i / (stepCount - 1) : 0;
     const w = fullWidth * (1 - t * taper);
@@ -98,12 +92,26 @@ export function StairsUpSVG({ d, next }: { d: DepthConfig; next: DepthConfig }) 
     };
   });
 
+  const topStepY = steps[steps.length - 1].top;
+  const holeBottomY = topStepY;
+  const holeTopY = Math.min(next.top, holeBottomY - bandH * 0.08);
+
+  const inset = 0.15;
+  const nearL = d.left + colW * inset;
+  const nearR = d.right - colW * inset;
+  const tHoleBot = (holeBottomY - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+  const tHoleTop = (holeTopY - VIEW_HEIGHT) / (vanishY - VIEW_HEIGHT);
+  const holeBotL = nearL + (localVanishX - nearL) * tHoleBot;
+  const holeBotR = nearR + (localVanishX - nearR) * tHoleBot;
+  const holeTopL = nearL + (localVanishX - nearL) * tHoleTop;
+  const holeTopR = nearR + (localVanishX - nearR) * tHoleTop;
+
   return (
     <g>
-      <polygon points={`${ceilNearL},${d.top} ${ceilNearR},${d.top} ${ceilFarR},${next.top} ${ceilFarL},${next.top}`} fill="#050510" />
-      <polygon points={`${ceilNearL},${d.top} ${ceilNearR},${d.top} ${ceilFarR},${next.top} ${ceilFarL},${next.top}`} fill="none" stroke="#3a3a55" strokeWidth="1" />
+      <polygon points={`${holeBotL},${holeBottomY} ${holeBotR},${holeBottomY} ${holeTopR},${holeTopY} ${holeTopL},${holeTopY}`} fill="#050510" />
+      <polygon points={`${holeBotL},${holeBottomY} ${holeBotR},${holeBottomY} ${holeTopR},${holeTopY} ${holeTopL},${holeTopY}`} fill="none" stroke="#3a3a55" strokeWidth="1" />
       {steps.map((s, i) => {
-        const shade = 75 - i * 8;
+        const shade = 80 - i * 6;
         const treadPortion = stepH * 0.45;
         const treadBot = s.top + treadPortion;
         const above = steps[i + 1];
@@ -124,7 +132,7 @@ export function StairsUpSVG({ d, next }: { d: DepthConfig; next: DepthConfig }) 
 }
 
 export function ChestWallSVG({ d }: { d: DepthConfig }) {
-  const cw = (d.right - d.left) * 0.3;
+  const cw = (d.right - d.left) * 0.5;
   const ch = (d.bottom - d.top) * 0.25;
   const cx = (d.left + d.right) / 2 - cw / 2;
   const cy = d.bottom - ch - (d.bottom - d.top) * 0.1;

@@ -11,6 +11,8 @@ export function isBlockingSide(cell: CellType): boolean {
   return cell === 'wall' || cell === 'door';
 }
 
+const SIDE_OBJECT_TYPES = new Set<CellType>(['stairs_down', 'stairs_up', 'chest', 'trader', 'boss', 'door']);
+
 export function getViewCells(
   grid: CellType[][],
   px: number, py: number,
@@ -43,11 +45,16 @@ export function getViewCells(
     rightRight.push(getCellAt(grid, fx + 2 * rd.x, fy + 2 * rd.y, width, height));
   }
 
+  for (let i = 0; i < left.length; i++) {
+    if (isBlockingSide(left[i])) leftLeft[i] = 'wall';
+    if (isBlockingSide(right[i])) rightRight[i] = 'wall';
+  }
+
   return { forward, left, right, leftLeft, rightRight };
 }
 
 export interface WallInstruction {
-  type: 'front' | 'torch' | 'column_wall' | 'column_side';
+  type: 'front' | 'torch' | 'column_wall' | 'column_side' | 'column_front';
   depth: number;
   cellType?: CellType;
   column?: number;
@@ -104,6 +111,20 @@ export function buildWallInstructions(
     // Column walls on top of side strips
     for (const col of columnWalls) {
       instructions.push({ type: 'column_wall', depth: d, column: col });
+    }
+
+    // Special objects (stairs, chests, traders, bosses) in side columns
+    if (leftLeft && d < leftLeft.length && SIDE_OBJECT_TYPES.has(leftLeft[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 0, cellType: leftLeft[d] });
+    }
+    if (d < left.length && SIDE_OBJECT_TYPES.has(left[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 1, cellType: left[d] });
+    }
+    if (d < right.length && SIDE_OBJECT_TYPES.has(right[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 3, cellType: right[d] });
+    }
+    if (rightRight && d < rightRight.length && SIDE_OBJECT_TYPES.has(rightRight[d])) {
+      instructions.push({ type: 'column_front', depth: d, column: 4, cellType: rightRight[d] });
     }
 
     if (nearestBlocker >= 0 && d > nearestBlocker) continue;

@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { DIRECTION_DELTAS } from '../../utils/direction';
-import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS, EXTENDED_DEPTH, columnEdgeX } from '../svg/dungeon/dungeonConstants';
+import { VIEW_WIDTH, VIEW_HEIGHT, DEPTHS, EXTENDED_DEPTH, columnEdgeX, type DepthConfig } from '../svg/dungeon/dungeonConstants';
 import WallGradients from '../svg/dungeon/WallGradients';
 import { FrontWall } from '../svg/dungeon/WallPanels';
+import { StairsDownSVG, StairsUpSVG, ChestWallSVG, TraderWallSVG, BossWallSVG, DoorWallSVG } from '../svg/dungeon/WallTypes';
 import TorchSconce from '../svg/dungeon/TorchSconce';
 import FloorAndCeiling from '../svg/dungeon/FloorAndCeiling';
 import { getViewCells, buildWallInstructions, getPrompt } from './dungeonViewUtils';
@@ -108,6 +109,29 @@ export default function DungeonView() {
       case 'front':
         wallElements.push(<FrontWall key={`fw-${inst.depth}`} depth={inst.depth} cellType={inst.cellType!} />);
         break;
+      case 'column_front': {
+        const col = inst.column!;
+        const depthCfg = DEPTHS[inst.depth];
+        if (depthCfg) {
+          const colLeft = columnEdgeX(col, depthCfg.bottom);
+          const colRight = columnEdgeX(col + 1, depthCfg.bottom);
+          const colD: DepthConfig = { left: colLeft, right: colRight, top: depthCfg.top, bottom: depthCfg.bottom };
+          const nextDepthCfg = inst.depth < DEPTHS.length - 1 ? DEPTHS[inst.depth + 1] : EXTENDED_DEPTH;
+          const nextColLeft = columnEdgeX(col, nextDepthCfg.bottom);
+          const nextColRight = columnEdgeX(col + 1, nextDepthCfg.bottom);
+          const colNext: DepthConfig = { left: nextColLeft, right: nextColRight, top: nextDepthCfg.top, bottom: nextDepthCfg.bottom };
+          const k = `cf-${inst.depth}-${col}`;
+          switch (inst.cellType) {
+            case 'stairs_down': wallElements.push(<StairsDownSVG key={k} d={colD} next={colNext} />); break;
+            case 'stairs_up': wallElements.push(<StairsUpSVG key={k} d={colD} next={colNext} />); break;
+            case 'chest': wallElements.push(<ChestWallSVG key={k} d={colD} />); break;
+            case 'trader': wallElements.push(<TraderWallSVG key={k} d={colD} />); break;
+            case 'boss': wallElements.push(<BossWallSVG key={k} d={colD} />); break;
+            case 'door': wallElements.push(<DoorWallSVG key={k} d={colD} />); break;
+          }
+        }
+        break;
+      }
       case 'torch': {
         const depthCfg = DEPTHS[inst.depth];
         const wallW = depthCfg.right - depthCfg.left;
