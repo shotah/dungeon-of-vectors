@@ -284,6 +284,7 @@ export default function CombatScreen() {
               size="sm"
               variant="danger"
               style={{ position: 'absolute', top: 6, right: 6, fontSize: 11, padding: '4px 10px', minHeight: 28, zIndex: 2 }}
+              tooltip="Attempt to escape combat. Chance depends on party speed vs enemy speed."
             >Flee</Button>
           )}
           {combat.monsters.map((monster, i) => {
@@ -421,16 +422,16 @@ export default function CombatScreen() {
               </div>
               {!combat.selectedAction && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <Button onClick={() => handleSelectAction('attack')} size="sm">Attack {currentChar ? getEffectiveAttack(currentChar) : ''}dmg</Button>
-                  <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary">Defend</Button>
+                  <Button onClick={() => handleSelectAction('attack')} size="sm" tooltip="Strike a single enemy with your equipped weapon.">Attack {currentChar ? getEffectiveAttack(currentChar) : ''}dmg</Button>
+                  <Button onClick={() => handleSelectAction('defend')} size="sm" variant="secondary" tooltip="Skip your attack to brace for incoming damage.">Defend</Button>
                   {spells.length > 0 && (
-                    <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold">Magic</Button>
+                    <Button onClick={() => handleSelectAction('magic')} size="sm" variant="gold" tooltip="Cast a spell using MP.">Magic</Button>
                   )}
                   {spells.length === 0 && abilities.length > 0 && (
-                    <Button onClick={() => handleSelectAction('ability')} size="sm" variant="gold">Ability</Button>
+                    <Button onClick={() => handleSelectAction('ability')} size="sm" variant="gold" tooltip="Use a class ability.">Ability</Button>
                   )}
                   {consumables.length > 0 && (
-                    <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary">Item</Button>
+                    <Button onClick={() => handleSelectAction('item')} size="sm" variant="secondary" tooltip="Use a consumable item from your inventory.">Item</Button>
                   )}
                 </div>
               )}
@@ -443,6 +444,7 @@ export default function CombatScreen() {
                       size="sm"
                       variant="gold"
                       disabled={currentChar.stats.mp < spell.manaCost}
+                      tooltip={`${spell.description} [${spell.target.replace(/_/g, ' ')}]`}
                     >
                       {spell.name}{spell.damage ? ` ${spell.damage}dmg` : ''}{spell.healing ? ` ${spell.healing}hp` : ''} ({spell.manaCost}MP)
                     </Button>
@@ -460,6 +462,7 @@ export default function CombatScreen() {
                       onClick={() => handleSelectAbility(ability)}
                       size="sm"
                       variant="gold"
+                      tooltip={ability.description}
                     >
                       {ability.name}
                     </Button>

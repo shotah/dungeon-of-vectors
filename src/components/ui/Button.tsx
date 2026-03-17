@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import { useState, useRef, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react';
 
 interface ButtonProps {
   children: ReactNode;
@@ -7,6 +7,7 @@ interface ButtonProps {
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   style?: CSSProperties;
+  tooltip?: string;
 }
 
 const VARIANTS = {
@@ -22,15 +23,46 @@ const SIZES = {
   lg: { padding: '14px 28px', fontSize: '16px', minHeight: '48px' },
 };
 
-export default function Button({ children, onClick, variant = 'primary', disabled, size = 'md', style }: ButtonProps) {
+const TOOLTIP_STYLE: CSSProperties = {
+  position: 'absolute',
+  bottom: '100%',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  marginBottom: 6,
+  padding: '6px 10px',
+  background: '#1a1a2e',
+  color: '#ccd',
+  border: '1px solid #444',
+  borderRadius: 4,
+  fontSize: 11,
+  fontFamily: 'monospace',
+  whiteSpace: 'normal',
+  maxWidth: 220,
+  minWidth: 120,
+  textAlign: 'center',
+  zIndex: 100,
+  pointerEvents: 'none',
+  lineHeight: 1.4,
+};
+
+export default function Button({ children, onClick, variant = 'primary', disabled, size = 'md', style, tooltip }: ButtonProps) {
   const v = VARIANTS[variant];
   const s = SIZES[size];
+  const [showTip, setShowTip] = useState(false);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLP = useCallback(() => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+  }, []);
+
+  useEffect(() => clearLP, [clearLP]);
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       style={{
+        position: 'relative',
         background: disabled ? '#2a2a2a' : v.bg,
         color: disabled ? '#666' : v.text,
         border: `1px solid ${disabled ? '#333' : v.border}`,
@@ -45,10 +77,25 @@ export default function Button({ children, onClick, variant = 'primary', disable
         WebkitTapHighlightColor: 'transparent',
         ...style,
       }}
-      onMouseEnter={e => { if (!disabled) (e.target as HTMLElement).style.background = v.hover; }}
-      onMouseLeave={e => { if (!disabled) (e.target as HTMLElement).style.background = v.bg; }}
+      onMouseEnter={e => {
+        if (!disabled) (e.target as HTMLElement).style.background = v.hover;
+        if (tooltip) setShowTip(true);
+      }}
+      onMouseLeave={e => {
+        if (!disabled) (e.target as HTMLElement).style.background = v.bg;
+        setShowTip(false);
+      }}
+      onTouchStart={() => {
+        if (tooltip) {
+          clearLP();
+          longPressRef.current = setTimeout(() => setShowTip(true), 400);
+        }
+      }}
+      onTouchEnd={() => { clearLP(); setShowTip(false); }}
+      onTouchCancel={() => { clearLP(); setShowTip(false); }}
     >
       {children}
+      {tooltip && showTip && <span style={TOOLTIP_STYLE}>{tooltip}</span>}
     </button>
   );
 }
